@@ -107,6 +107,13 @@ function mapYtDlpError(error) {
     );
   }
 
+  if (/Requested format is not available/i.test(raw)) {
+    return new Error(
+      'YouTube no ofrece el formato solicitado para este video en este entorno. ' +
+        'La app ha intentado varios formatos automaticamente, pero no se encontro uno valido.'
+    );
+  }
+
   return error;
 }
 
@@ -132,15 +139,25 @@ async function getVideoInfo(url) {
 
 async function downloadAudio(url, jobId) {
   const outputTemplate = path.join(tmpDir, `${jobId}-input.%(ext)s`);
+  const formatFallbacks = ['bestaudio/best', 'bestaudio', 'bestaudio*', 'ba', 'best'];
+  let lastError = null;
 
-  try {
-    await youtubedl(url, {
-      ...baseYtDlpOptions(),
-      format: 'bestaudio/best',
-      output: outputTemplate,
-    });
-  } catch (error) {
-    throw mapYtDlpError(error);
+  for (const formatSelector of formatFallbacks) {
+    try {
+      await youtubedl(url, {
+        ...baseYtDlpOptions(),
+        format: formatSelector,
+        output: outputTemplate,
+      });
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw mapYtDlpError(lastError);
   }
 
   const files = await fsp.readdir(tmpDir);
