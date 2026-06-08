@@ -98,6 +98,7 @@ function baseYtDlpOptions() {
 
 function mapYtDlpError(error) {
   const raw = String(error?.stderr || error?.message || error || '');
+  const compactRaw = raw.replace(/\s+/g, ' ').trim().slice(0, 500);
 
   if (/Sign in to confirm you.?re not a bot/i.test(raw)) {
     return new Error(
@@ -110,7 +111,8 @@ function mapYtDlpError(error) {
   if (/Requested format is not available/i.test(raw)) {
     return new Error(
       'YouTube no ofrece el formato solicitado para este video en este entorno. ' +
-        'La app ha intentado varios formatos automaticamente, pero no se encontro uno valido.'
+        'La app ha intentado varios formatos automaticamente, pero no se encontro uno valido. ' +
+        `Detalle yt-dlp: ${compactRaw || 'sin detalle adicional'}`
     );
   }
 
@@ -139,16 +141,28 @@ async function getVideoInfo(url) {
 
 async function downloadAudio(url, jobId) {
   const outputTemplate = path.join(tmpDir, `${jobId}-input.%(ext)s`);
-  const formatFallbacks = ['bestaudio/best', 'bestaudio', 'bestaudio*', 'ba', 'best'];
+  const formatFallbacks = [
+    'bestaudio[ext=m4a]/bestaudio[acodec!=none]/bestaudio/best',
+    'bestaudio/best',
+    'bestaudio',
+    'ba',
+    'best',
+    null,
+  ];
   let lastError = null;
 
   for (const formatSelector of formatFallbacks) {
+    const options = {
+      ...baseYtDlpOptions(),
+      output: outputTemplate,
+    };
+
+    if (formatSelector) {
+      options.format = formatSelector;
+    }
+
     try {
-      await youtubedl(url, {
-        ...baseYtDlpOptions(),
-        format: formatSelector,
-        output: outputTemplate,
-      });
+      await youtubedl(url, options);
       lastError = null;
       break;
     } catch (error) {
