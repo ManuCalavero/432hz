@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cooler / 432Hz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="panel-image" aria-hidden="true"></div>
+
+      <main class="panel-content">
+        <header class="site-header">
+          <p id="js-eyebrow" class="eyebrow"><b>432hz</b></p>
+          <h1>Convierte música<br />a su<br />frecuencia natural.</h1>
+          <p class="claim">
+            Convierte cualquier audio de YouTube a 432hz en segundos. Sin instalar nada, sin perder calidad.
+          </p>
+        </header>
+
+        <section class="form-section">
+          <form id="job-form">
+            <div class="input-row">
+              <input
+                id="youtube-url"
+                name="url"
+                type="url"
+                required
+                placeholder="https://www.youtube.com/watch?v=..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="submit">Convertir</button>
+            </div>
+            <div class="select-row">
+              <label id="tuning-mode-label">Perfil de afinación</label>
+              <div class="tuning-buttons" role="radiogroup" aria-labelledby="tuning-mode-label">
+                <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">Sin transformación - 440 Hz</button>
+                <button type="button" class="tuning-btn" data-value="exact" aria-pressed="true">Exacto - 432 Hz</button>
+              </div>
+              <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
+            </div>
+          </form>
+          <p id="form-error" class="error hidden"></p>
+        </section>
+
+        <section id="job-panel" class="job-panel hidden">
+          <p id="job-status" class="job-status"></p>
+          <p id="job-tuning" class="job-meta"></p>
+          <p id="job-duration" class="job-meta"></p>
+          <p id="job-error" class="error"></p>
+          <div id="downloads" class="downloads"></div>
+        </section>
+
+        <section class="logs-section">
+          <p class="logs-label">Últimas conversiones</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>URL</th>
+                  <th>Perfil</th>
+                  <th>Hz</th>
+                  <th>Estado</th>
+                  <th>Res.</th>
+                  <th>Tiempo</th>
+                </tr>
+              </thead>
+              <tbody id="logs-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>

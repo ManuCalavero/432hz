@@ -1,0 +1,20 @@
+{
+  "name": "cooler",
+  "version": "1.0.0",
+  "description": "YouTube audio to 432 Hz converter with queue and admin logs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "youtube-dl-exec": "^3.1.7"
+  }
+}
