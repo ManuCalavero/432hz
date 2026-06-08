@@ -36,6 +36,12 @@ YouTube puede requerir verificacion anti-bot en servidores. Si aparece el error
 
 Si ambas existen, la app prioriza `YTDLP_COOKIES_FROM_BROWSER`.
 
+Opcional (si YouTube sigue devolviendo problemas de formatos en servidores):
+
+- `YTDLP_EXTRACTOR_ARGS=youtube:player_client=android,web,ios`
+
+La app ya usa ese valor por defecto, pero puedes sobreescribirlo desde entorno.
+
 Abre:
 
 - `http://localhost:3000`

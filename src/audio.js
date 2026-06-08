@@ -87,11 +87,22 @@ function resolveYtDlpAuthOptions() {
   return {};
 }
 
+function resolveYtDlpExtractorArgs() {
+  const raw = (process.env.YTDLP_EXTRACTOR_ARGS || '').trim();
+  if (raw) {
+    return raw;
+  }
+
+  return 'youtube:player_client=android,web,ios';
+}
+
 function baseYtDlpOptions() {
   return {
+    ignoreConfig: true,
     noWarnings: true,
     noPlaylist: true,
     noCheckCertificates: true,
+    extractorArgs: resolveYtDlpExtractorArgs(),
     ...resolveYtDlpAuthOptions(),
   };
 }
