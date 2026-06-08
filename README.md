@@ -26,6 +26,16 @@ npm install
 npm start
 ```
 
+## Produccion (yt-dlp / YouTube)
+
+YouTube puede requerir verificacion anti-bot en servidores. Si aparece el error
+`Sign in to confirm you're not a bot`, configura una de estas variables de entorno:
+
+- `YTDLP_COOKIES_FROM_BROWSER=chrome` (o `firefox`, `safari`, etc.)
+- `YTDLP_COOKIES_FILE=/ruta/absoluta/a/cookies.txt`
+
+Si ambas existen, la app prioriza `YTDLP_COOKIES_FROM_BROWSER`.
+
 Abre:
 
 - `http://localhost:3000`

@@ -234,7 +234,6 @@ button[type="submit"]:hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-top: 1px solid var(--line-soft);
   padding-top: 28px;
 }
 
@@ -323,6 +322,11 @@ tbody td a {
 
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 860px) {
+
+  h1 {
+    font-size: 72px;
+  }
+  
   .layout {
     grid-template-columns: 1fr;
   }
@@ -330,5 +334,18 @@ tbody td a {
   .panel-image {
     position: relative;
     height: 50dvh;
+  }
+
+  .panel-content {
+    padding-top:0;
+  }
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .input-row button{
+    width: 100%;
   }
 }

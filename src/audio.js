@@ -72,17 +72,56 @@ function normalizeYouTubeUrl(inputUrl) {
   return inputUrl;
 }
 
-async function getVideoInfo(url) {
-  const result = await youtubedl(url, {
-    dumpSingleJson: true,
+function resolveYtDlpAuthOptions() {
+  const cookiesFromBrowser = (process.env.YTDLP_COOKIES_FROM_BROWSER || '').trim();
+  const cookiesFile = (process.env.YTDLP_COOKIES_FILE || '').trim();
+
+  if (cookiesFromBrowser) {
+    return { cookiesFromBrowser };
+  }
+
+  if (cookiesFile) {
+    return { cookies: path.resolve(cookiesFile) };
+  }
+
+  return {};
+}
+
+function baseYtDlpOptions() {
+  return {
     noWarnings: true,
-    noCallHome: true,
     noPlaylist: true,
-    skipDownload: true,
     noCheckCertificates: true,
-    preferFreeFormats: true,
-    youtubeSkipDashManifest: true,
-  });
+    ...resolveYtDlpAuthOptions(),
+  };
+}
+
+function mapYtDlpError(error) {
+  const raw = String(error?.stderr || error?.message || error || '');
+
+  if (/Sign in to confirm you.?re not a bot/i.test(raw)) {
+    return new Error(
+      'YouTube ha bloqueado la descarga por verificacion anti-bot. ' +
+        'Configura YTDLP_COOKIES_FROM_BROWSER (ej: chrome) o YTDLP_COOKIES_FILE ' +
+        'en el entorno del servidor para permitir descargas en produccion.'
+    );
+  }
+
+  return error;
+}
+
+async function getVideoInfo(url) {
+  let result;
+  try {
+    result = await youtubedl(url, {
+      ...baseYtDlpOptions(),
+      dumpSingleJson: true,
+      skipDownload: true,
+      preferFreeFormats: true,
+    });
+  } catch (error) {
+    throw mapYtDlpError(error);
+  }
 
   if (typeof result === 'string') {
     return JSON.parse(result);
@@ -94,15 +133,15 @@ async function getVideoInfo(url) {
 async function downloadAudio(url, jobId) {
   const outputTemplate = path.join(tmpDir, `${jobId}-input.%(ext)s`);
 
-  await youtubedl(url, {
-    noWarnings: true,
-    noCallHome: true,
-    noCheckCertificates: true,
-    noPlaylist: true,
-    format: 'bestaudio/best',
-    output: outputTemplate,
-    youtubeSkipDashManifest: true,
-  });
+  try {
+    await youtubedl(url, {
+      ...baseYtDlpOptions(),
+      format: 'bestaudio/best',
+      output: outputTemplate,
+    });
+  } catch (error) {
+    throw mapYtDlpError(error);
+  }
 
   const files = await fsp.readdir(tmpDir);
   const matches = files
