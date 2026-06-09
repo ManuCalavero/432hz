@@ -5,6 +5,10 @@ class InMemoryQueue {
     this.isRunning = false;
   }
 
+  getPendingCount() {
+    return this.pending.length;
+  }
+
   add(payload) {
     this.pending.push(payload);
     this.run().catch((error) => {

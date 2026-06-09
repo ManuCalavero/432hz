@@ -13,8 +13,12 @@ const { normalizeYouTubeUrl, assertVideoConstraints, convertTo432Hz } = require(
 
 const app = express();
 
+const JOB_LIMIT_PER_HOUR = 10;
+const JOB_WINDOW_MS = 60 * 60 * 1000;
+const MAX_PENDING_JOBS = 25;
 const DOWNLOAD_LIMIT_PER_HOUR = 5;
 const DOWNLOAD_WINDOW_MS = 60 * 60 * 1000;
+const jobRateStore = new Map();
 const downloadRateStore = new Map();
 
 app.disable('x-powered-by');
@@ -41,12 +45,23 @@ app.use(morgan('dev'));
 app.use(express.static(path.join(rootDir, 'public'), { dotfiles: 'deny' }));
 
 function getClientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.trim()) {
-    return xff.split(',')[0].trim();
+  return req.ip || req.socket.remoteAddress || 'unknown';
+}
+
+function canCreateJob(ip) {
+  const now = Date.now();
+  const start = now - JOB_WINDOW_MS;
+  const attempts = (jobRateStore.get(ip) || []).filter((ts) => ts > start);
+
+  if (attempts.length >= JOB_LIMIT_PER_HOUR) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((attempts[0] + JOB_WINDOW_MS - now) / 1000));
+    jobRateStore.set(ip, attempts);
+    return { allowed: false, retryAfterSeconds };
   }
 
-  return req.ip || req.socket.remoteAddress || 'unknown';
+  attempts.push(now);
+  jobRateStore.set(ip, attempts);
+  return { allowed: true, retryAfterSeconds: 0 };
 }
 
 function canDownload(ip) {
@@ -76,7 +91,7 @@ function isAntiBotValidationError(error) {
 function toAdminLog(job) {
   return {
     id: job.id,
-    url: job.url,
+    sourceHost: getSourceHost(job.url),
     tuningMode: job.tuningMode,
     targetA4: job.targetA4,
     status: job.status,
@@ -85,6 +100,52 @@ function toAdminLog(job) {
     finishedAt: job.finishedAt,
     durationMs: job.durationMs,
   };
+}
+
+function getSourceHost(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+function toPublicJob(job) {
+  return {
+    id: job.id,
+    status: job.status,
+    result: job.result,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    durationMs: job.durationMs,
+    tuningMode: job.tuningMode,
+    targetA4: job.targetA4,
+    sourceHost: getSourceHost(job.url),
+  };
+}
+
+function buildQueuedJob({ url, tuningMode, targetA4 }) {
+  return {
+    id: randomUUID(),
+    url,
+    status: 'queued',
+    result: null,
+    createdAt: nowIso(),
+    startedAt: null,
+    finishedAt: null,
+    durationMs: null,
+    tuningMode,
+    targetA4,
+    outputWavPath: null,
+    outputMp3Path: null,
+    error: null,
+  };
+}
+
+async function enqueueJob(job) {
+  await createJob(job);
+  queue.add({ jobId: job.id, url: job.url, targetA4: job.targetA4 });
 }
 
 async function fileExists(filePath) {
@@ -189,9 +250,22 @@ app.post('/api/jobs', async (req, res) => {
   const tuningMode = requestedMode in tuningProfiles ? requestedMode : 'exact';
   const targetA4 = tuningProfiles[tuningMode];
   const url = normalizeYouTubeUrl(rawUrl);
+  const clientIp = getClientIp(req);
 
   if (!url) {
     res.status(400).json({ error: 'Debes indicar una URL de YouTube.' });
+    return;
+  }
+
+  const rate = canCreateJob(clientIp);
+  if (!rate.allowed) {
+    res.setHeader('Retry-After', String(rate.retryAfterSeconds));
+    res.status(429).json({ error: 'Limite alcanzado: maximo 10 trabajos por hora.' });
+    return;
+  }
+
+  if (queue.getPendingCount() >= MAX_PENDING_JOBS) {
+    res.status(503).json({ error: 'La cola esta llena. Intenta de nuevo en unos minutos.' });
     return;
   }
 
@@ -199,24 +273,8 @@ app.post('/api/jobs', async (req, res) => {
     await assertVideoConstraints(url);
   } catch (error) {
     if (isAntiBotValidationError(error)) {
-      const job = {
-        id: randomUUID(),
-        url,
-        status: 'queued',
-        result: null,
-        createdAt: nowIso(),
-        startedAt: null,
-        finishedAt: null,
-        durationMs: null,
-        tuningMode,
-        targetA4,
-        outputWavPath: null,
-        outputMp3Path: null,
-        error: null,
-      };
-
-      await createJob(job);
-      queue.add({ jobId: job.id, url, targetA4 });
+      const job = buildQueuedJob({ url, tuningMode, targetA4 });
+      await enqueueJob(job);
 
       res.status(202).json({
         id: job.id,
@@ -231,24 +289,8 @@ app.post('/api/jobs', async (req, res) => {
     return;
   }
 
-  const job = {
-    id: randomUUID(),
-    url,
-    status: 'queued',
-    result: null,
-    createdAt: nowIso(),
-    startedAt: null,
-    finishedAt: null,
-    durationMs: null,
-    tuningMode,
-    targetA4,
-    outputWavPath: null,
-    outputMp3Path: null,
-    error: null,
-  };
-
-  await createJob(job);
-  queue.add({ jobId: job.id, url, targetA4 });
+  const job = buildQueuedJob({ url, tuningMode, targetA4 });
+  await enqueueJob(job);
 
   res.status(202).json({
     id: job.id,
@@ -290,7 +332,7 @@ app.get('/api/jobs/:id', async (req, res) => {
 
 app.get('/api/jobs', async (_req, res) => {
   const jobs = await getJobs();
-  res.json(jobs);
+  res.json(jobs.map(toPublicJob));
 });
 
 app.get('/api/admin/logs', async (_req, res) => {

@@ -57,6 +57,10 @@ function modeLabel(mode) {
   return modeLabels[mode] || '-';
 }
 
+function renderSourceHost(sourceHost) {
+  return sourceHost ? escapeHtml(sourceHost) : '-';
+}
+
 function setSelectedTuningMode(mode) {
   tuningModeInput.value = mode;
   tuningModeButtons.forEach((button) => {
@@ -105,7 +109,7 @@ async function refreshLogs() {
       const resultClass = row.result === 'ok' ? 'state-ok' : row.result === 'ko' ? 'state-ko' : '';
       return `<tr>
         <td>${escapeHtml(startedAt)}</td>
-        <td><a href="${escapeHtml(row.url)}" target="_blank" rel="noreferrer">link</a></td>
+        <td>${renderSourceHost(row.sourceHost)}</td>
         <td>${escapeHtml(modeLabel(row.tuningMode))}</td>
         <td>${escapeHtml(row.targetA4 || '-')}</td>
         <td>${escapeHtml(humanStatus(row.status))}</td>
