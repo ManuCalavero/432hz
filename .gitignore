@@ -2,3 +2,4 @@ node_modules/
 storage/output/
 storage/tmp/
 .DS_Store
+*-base.js
