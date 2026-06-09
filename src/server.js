@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const path = require('path');
 const fs = require('fs/promises');
 const { randomUUID } = require('crypto');
@@ -65,6 +67,10 @@ function canDownload(ip) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function isAntiBotValidationError(error) {
+  return /verificacion anti-bot/i.test(String(error?.message || error || ''));
 }
 
 function toAdminLog(job) {
@@ -192,6 +198,35 @@ app.post('/api/jobs', async (req, res) => {
   try {
     await assertVideoConstraints(url);
   } catch (error) {
+    if (isAntiBotValidationError(error)) {
+      const job = {
+        id: randomUUID(),
+        url,
+        status: 'queued',
+        result: null,
+        createdAt: nowIso(),
+        startedAt: null,
+        finishedAt: null,
+        durationMs: null,
+        tuningMode,
+        targetA4,
+        outputWavPath: null,
+        outputMp3Path: null,
+        error: null,
+      };
+
+      await createJob(job);
+      queue.add({ jobId: job.id, url, targetA4 });
+
+      res.status(202).json({
+        id: job.id,
+        status: job.status,
+        tuningMode,
+        targetA4,
+      });
+      return;
+    }
+
     res.status(400).json({ error: error.message });
     return;
   }

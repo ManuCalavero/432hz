@@ -3,3 +3,4 @@ storage/output/
 storage/tmp/
 .DS_Store
 *-base.js
+.env

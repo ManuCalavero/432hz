@@ -33,8 +33,15 @@ YouTube puede requerir verificacion anti-bot en servidores. Si aparece el error
 
 - `YTDLP_COOKIES_FROM_BROWSER=chrome` (o `firefox`, `safari`, etc.)
 - `YTDLP_COOKIES_FILE=/ruta/absoluta/a/cookies.txt`
+- `YTDLP_COOKIES_B64=...` con el cookie file de Netscape codificado en base64
 
-Si ambas existen, la app prioriza `YTDLP_COOKIES_FROM_BROWSER`.
+Si existen varias, la app prioriza `YTDLP_COOKIES_FROM_BROWSER`, luego `YTDLP_COOKIES_FILE` y por ultimo `YTDLP_COOKIES_B64`.
+
+La app carga automaticamente un archivo `.env` al arrancar, asi que puedes definir
+ahi estas variables en local o en despliegues que las soporten.
+
+En Render o en cualquier hosting similar, configura las mismas variables en el panel
+de entorno del servicio. No hace falta subir `.env`; usa `.env.example` como plantilla.
 
 Opcional (si YouTube sigue devolviendo problemas de formatos en servidores):
 

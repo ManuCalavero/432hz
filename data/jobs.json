@@ -1,6 +1,21 @@
 {
   "jobs": [
     {
+      "id": "ff2ebdcf-93e4-4cea-b615-c33408223bfc",
+      "url": "https://www.youtube.com/watch?v=h0ffIJ7ZO4U",
+      "status": "completed",
+      "result": "ok",
+      "createdAt": "2026-06-09T07:46:39.023Z",
+      "startedAt": "2026-06-09T07:46:39.025Z",
+      "finishedAt": "2026-06-09T07:46:46.947Z",
+      "durationMs": 7922,
+      "tuningMode": "exact",
+      "targetA4": 432,
+      "outputWavPath": "/Users/manuelmarquezclavero/Documents/Workspace/432hz/storage/output/ff2ebdcf-93e4-4cea-b615-c33408223bfc.wav",
+      "outputMp3Path": "/Users/manuelmarquezclavero/Documents/Workspace/432hz/storage/output/ff2ebdcf-93e4-4cea-b615-c33408223bfc.mp3",
+      "error": null
+    },
+    {
       "id": "9a2ef999-7e5c-437e-8c98-85542eb8fca7",
       "url": "https://www.youtube.com/watch?v=h0ffIJ7ZO4U",
       "status": "completed",

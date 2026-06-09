@@ -19,6 +19,34 @@ async function ensureFolders() {
   await fsp.mkdir(outputDir, { recursive: true });
 }
 
+let cachedCookiesFilePath = null;
+
+async function resolveCookiesFileFromBase64() {
+  const rawCookiesB64 = (process.env.YTDLP_COOKIES_B64 || '').trim();
+  if (!rawCookiesB64) {
+    return null;
+  }
+
+  if (cachedCookiesFilePath) {
+    return cachedCookiesFilePath;
+  }
+
+  const normalizedB64 = rawCookiesB64.replace(/\s+/g, '');
+  const decodedCookies = Buffer.from(normalizedB64, 'base64').toString('utf8');
+
+  if (!decodedCookies.trim()) {
+    throw new Error('YTDLP_COOKIES_B64 no contiene un cookie file valido.');
+  }
+
+  await ensureFolders();
+
+  const cookiesFilePath = path.join(tmpDir, 'yt-dlp-cookies.txt');
+  await fsp.writeFile(cookiesFilePath, decodedCookies, 'utf8');
+
+  cachedCookiesFilePath = cookiesFilePath;
+  return cookiesFilePath;
+}
+
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
     const child = spawn(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -72,7 +100,7 @@ function normalizeYouTubeUrl(inputUrl) {
   return inputUrl;
 }
 
-function resolveYtDlpAuthOptions() {
+async function resolveYtDlpAuthOptions() {
   const cookiesFromBrowser = (process.env.YTDLP_COOKIES_FROM_BROWSER || '').trim();
   const cookiesFile = (process.env.YTDLP_COOKIES_FILE || '').trim();
 
@@ -82,6 +110,11 @@ function resolveYtDlpAuthOptions() {
 
   if (cookiesFile) {
     return { cookies: path.resolve(cookiesFile) };
+  }
+
+  const cookiesFileFromBase64 = await resolveCookiesFileFromBase64();
+  if (cookiesFileFromBase64) {
+    return { cookies: cookiesFileFromBase64 };
   }
 
   return {};
@@ -103,7 +136,6 @@ function baseYtDlpOptions() {
     noPlaylist: true,
     noCheckCertificates: true,
     extractorArgs: resolveYtDlpExtractorArgs(),
-    ...resolveYtDlpAuthOptions(),
   };
 }
 
@@ -114,8 +146,9 @@ function mapYtDlpError(error) {
   if (/Sign in to confirm you.?re not a bot/i.test(raw)) {
     return new Error(
       'YouTube ha bloqueado la descarga por verificacion anti-bot. ' +
-        'Configura YTDLP_COOKIES_FROM_BROWSER (ej: chrome) o YTDLP_COOKIES_FILE ' +
-        'en el entorno del servidor para permitir descargas en produccion.'
+        'Configura YTDLP_COOKIES_FROM_BROWSER, YTDLP_COOKIES_FILE o YTDLP_COOKIES_B64 ' +
+        'en el entorno del servidor. Si usas un archivo .env, el servidor lo cargara ' +
+        'automaticamente al arrancar.'
     );
   }
 
@@ -135,6 +168,7 @@ async function getVideoInfo(url) {
   try {
     result = await youtubedl(url, {
       ...baseYtDlpOptions(),
+      ...(await resolveYtDlpAuthOptions()),
       dumpSingleJson: true,
       skipDownload: true,
       preferFreeFormats: true,
@@ -165,6 +199,7 @@ async function downloadAudio(url, jobId) {
   for (const formatSelector of formatFallbacks) {
     const options = {
       ...baseYtDlpOptions(),
+      ...(await resolveYtDlpAuthOptions()),
       output: outputTemplate,
     };
 
