@@ -81,6 +81,52 @@ function toAdminLog(job) {
   };
 }
 
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveDownloadPath(job, format) {
+  const expectedFileName = `${job.id}.${format}`;
+  const outputPath = format === 'wav' ? job.outputWavPath : job.outputMp3Path;
+  const normalizedOutputDir = path.resolve(outputDir) + path.sep;
+  const canonicalPath = path.join(outputDir, expectedFileName);
+
+  if (await fileExists(canonicalPath)) {
+    return { path: canonicalPath, migrated: false };
+  }
+
+  if (typeof outputPath !== 'string' || outputPath.trim() === '') {
+    return { path: null, migrated: false };
+  }
+
+  const normalizedOutputPath = path.resolve(outputPath);
+  if (path.basename(normalizedOutputPath) !== expectedFileName) {
+    return { path: null, migrated: false };
+  }
+
+  if (!(await fileExists(normalizedOutputPath))) {
+    return { path: null, migrated: false };
+  }
+
+  if (normalizedOutputPath.startsWith(normalizedOutputDir)) {
+    return { path: normalizedOutputPath, migrated: false };
+  }
+
+  // Legacy compatibility: old jobs may point to a previous workspace folder.
+  try {
+    await fs.mkdir(path.dirname(canonicalPath), { recursive: true });
+    await fs.copyFile(normalizedOutputPath, canonicalPath);
+    return { path: canonicalPath, migrated: true };
+  } catch {
+    return { path: null, migrated: false };
+  }
+}
+
 const queue = new InMemoryQueue(async (payload) => {
   const { jobId, url, targetA4 } = payload;
 
@@ -219,6 +265,11 @@ app.get('/api/admin/logs', async (_req, res) => {
 
 app.get('/api/download/:id/:format', async (req, res) => {
   const { id, format } = req.params;
+  if (format !== 'wav' && format !== 'mp3') {
+    res.status(400).json({ error: 'Formato no soportado.' });
+    return;
+  }
+
   const job = await getJob(id);
   const clientIp = getClientIp(req);
 
@@ -227,25 +278,17 @@ app.get('/api/download/:id/:format', async (req, res) => {
     return;
   }
 
-  if (format !== 'wav' && format !== 'mp3') {
-    res.status(400).json({ error: 'Formato no soportado.' });
-    return;
-  }
-
-  const outputPath = format === 'wav' ? job.outputWavPath : job.outputMp3Path;
-  const normalizedOutputDir = path.resolve(outputDir) + path.sep;
-  const normalizedOutputPath = path.resolve(outputPath);
-
-  if (!normalizedOutputPath.startsWith(normalizedOutputDir)) {
-    res.status(403).json({ error: 'Ruta de descarga invalida.' });
-    return;
-  }
-
-  try {
-    await fs.access(normalizedOutputPath);
-  } catch {
+  const resolved = await resolveDownloadPath(job, format);
+  if (!resolved.path) {
     res.status(404).json({ error: 'El archivo no existe en disco.' });
     return;
+  }
+
+  if (resolved.migrated) {
+    await updateJob(id, {
+      outputWavPath: format === 'wav' ? resolved.path : job.outputWavPath,
+      outputMp3Path: format === 'mp3' ? resolved.path : job.outputMp3Path,
+    });
   }
 
   const rate = canDownload(clientIp);
@@ -255,7 +298,7 @@ app.get('/api/download/:id/:format', async (req, res) => {
     return;
   }
 
-  res.download(normalizedOutputPath, `${id}.${format}`);
+  res.download(resolved.path, `${id}.${format}`);
 });
 
 app.get('/health', (_req, res) => {
