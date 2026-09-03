@@ -1,4 +1,5 @@
 node_modules/
+dist/
 storage/output/
 storage/tmp/
 .DS_Store
