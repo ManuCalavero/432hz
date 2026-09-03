@@ -44,6 +44,10 @@ body {
   text-align: center;
 }
 
+.empty-block {
+  display: none;
+}
+
 /* Left panel — image */
 .panel-image {
   display: flex;
