@@ -13,6 +13,7 @@ const { InMemoryQueue } = require('./queue');
 const { assertAudioConstraints, convertTo432Hz } = require('./audio');
 
 const app = express();
+const bindHost = process.env.HOST || (process.env.RENDER ? '0.0.0.0' : '127.0.0.1');
 
 const JOB_LIMIT_PER_HOUR = 10;
 const JOB_WINDOW_MS = 60 * 60 * 1000;
@@ -355,10 +356,10 @@ async function start() {
   await fs.mkdir(tmpDir, { recursive: true });
 
   return new Promise((resolve, reject) => {
-    const server = app.listen(port, '127.0.0.1', () => {
+    const server = app.listen(port, bindHost, () => {
       const address = server.address();
       const actualPort = typeof address === 'object' && address ? address.port : port;
-      console.log(`cooler listening on http://127.0.0.1:${actualPort}`);
+      console.log(`cooler listening on http://${bindHost}:${actualPort}`);
       resolve(server);
     });
 
