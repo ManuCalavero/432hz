@@ -8,6 +8,7 @@ module.exports = {
   dataFile: path.join(ROOT_DIR, 'data', 'jobs.json'),
   tmpDir: path.join(ROOT_DIR, 'storage', 'tmp'),
   outputDir: path.join(ROOT_DIR, 'storage', 'output'),
+  maxUploadBytes: 250 * 1024 * 1024,
   outputSampleRate: 44100,
   outputWavSampleFormat: 's16',
   outputMp3Bitrate: '320k',

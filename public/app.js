@@ -1,5 +1,7 @@
 const form = document.getElementById('job-form');
-const urlInput = document.getElementById('youtube-url');
+const dropZone = document.getElementById('drop-zone');
+const audioInput = document.getElementById('audio-file');
+const fileNameEl = document.getElementById('file-name');
 const tuningModeInput = document.getElementById('tuning-mode');
 const tuningModeButtons = document.querySelectorAll('.tuning-btn');
 const formError = document.getElementById('form-error');
@@ -13,6 +15,48 @@ const logsBody = document.getElementById('logs-body');
 
 let pollTimer = null;
 let activeJobId = null;
+let selectedFile = null;
+
+function formatFileSize(bytes) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.ceil(bytes / 1024)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function setSelectedFile(file) {
+  selectedFile = file;
+  dropZone.classList.toggle('has-file', Boolean(file));
+  fileNameEl.textContent = file ? `${file.name} · ${formatFileSize(file.size)}` : 'MP3, WAV, M4A, FLAC, OGG o AAC · máximo 250 MB';
+}
+
+dropZone.addEventListener('click', () => audioInput.click());
+dropZone.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    audioInput.click();
+  }
+});
+audioInput.addEventListener('change', () => setSelectedFile(audioInput.files[0] || null));
+
+['dragenter', 'dragover'].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.add('is-dragging');
+  });
+});
+
+['dragleave', 'drop'].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('is-dragging');
+  });
+});
+
+dropZone.addEventListener('drop', (event) => {
+  setSelectedFile(event.dataTransfer.files[0] || null);
+});
 
 function formatDurationMs(ms) {
   if (!ms && ms !== 0) {
@@ -165,14 +209,22 @@ form.addEventListener('submit', async (event) => {
   formError.textContent = '';
   errorEl.textContent = '';
 
-  const url = urlInput.value.trim();
   const tuningMode = tuningModeInput.value;
+
+  if (!selectedFile) {
+    formError.textContent = 'Selecciona un archivo de audio.';
+    formError.classList.remove('hidden');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('audio', selectedFile);
+  formData.append('tuningMode', tuningMode);
 
   try {
     const response = await fetch('/api/jobs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, tuningMode }),
+      body: formData,
     });
 
     const payload = await response.json();

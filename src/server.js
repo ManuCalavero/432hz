@@ -5,11 +5,12 @@ const fs = require('fs/promises');
 const { randomUUID } = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
+const multer = require('multer');
 const morgan = require('morgan');
-const { port, rootDir, outputDir, tuningProfiles } = require('./config');
+const { port, rootDir, tmpDir, outputDir, maxUploadBytes, tuningProfiles } = require('./config');
 const { ensureStore, createJob, updateJob, getJob, getJobs } = require('./store');
 const { InMemoryQueue } = require('./queue');
-const { normalizeYouTubeUrl, assertVideoConstraints, convertTo432Hz } = require('./audio');
+const { assertAudioConstraints, convertTo432Hz } = require('./audio');
 
 const app = express();
 
@@ -20,6 +21,21 @@ const DOWNLOAD_LIMIT_PER_HOUR = 5;
 const DOWNLOAD_WINDOW_MS = 60 * 60 * 1000;
 const jobRateStore = new Map();
 const downloadRateStore = new Map();
+const allowedAudioExtensions = new Set(['.aac', '.flac', '.m4a', '.mp3', '.ogg', '.opus', '.wav', '.webm']);
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: tmpDir,
+    filename: (_req, file, callback) => {
+      callback(null, `${randomUUID()}${path.extname(file.originalname).toLowerCase()}`);
+    },
+  }),
+  limits: { fileSize: maxUploadBytes, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    callback(null, allowedAudioExtensions.has(extension));
+  },
+});
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
@@ -91,7 +107,7 @@ function isAntiBotValidationError(error) {
 function toAdminLog(job) {
   return {
     id: job.id,
-    sourceHost: getSourceHost(job.url),
+    sourceHost: job.sourceType === 'upload' ? 'local' : getSourceHost(job.url),
     tuningMode: job.tuningMode,
     targetA4: job.targetA4,
     status: job.status,
@@ -121,14 +137,16 @@ function toPublicJob(job) {
     durationMs: job.durationMs,
     tuningMode: job.tuningMode,
     targetA4: job.targetA4,
-    sourceHost: getSourceHost(job.url),
+    sourceHost: job.sourceType === 'upload' ? job.originalFileName : getSourceHost(job.url),
   };
 }
 
-function buildQueuedJob({ url, tuningMode, targetA4 }) {
+function buildQueuedJob({ inputPath, originalFileName, tuningMode, targetA4 }) {
   return {
     id: randomUUID(),
-    url,
+    sourceType: 'upload',
+    originalFileName,
+    inputPath,
     status: 'queued',
     result: null,
     createdAt: nowIso(),
@@ -145,7 +163,7 @@ function buildQueuedJob({ url, tuningMode, targetA4 }) {
 
 async function enqueueJob(job) {
   await createJob(job);
-  queue.add({ jobId: job.id, url: job.url, targetA4: job.targetA4 });
+  queue.add({ jobId: job.id, inputPath: job.inputPath, targetA4: job.targetA4 });
 }
 
 async function fileExists(filePath) {
@@ -195,17 +213,17 @@ async function resolveDownloadPath(job, format) {
 }
 
 const queue = new InMemoryQueue(async (payload) => {
-  const { jobId, url, targetA4 } = payload;
+  const { jobId, inputPath, targetA4 } = payload;
 
   const startedAt = nowIso();
   await updateJob(jobId, {
-    status: 'downloading',
+    status: 'retuning',
     startedAt,
   });
 
   try {
     await updateJob(jobId, { status: 'retuning' });
-    const outputs = await convertTo432Hz({ url, jobId, targetA4 });
+    const outputs = await convertTo432Hz({ inputPath, jobId, targetA4 });
 
     const finishedAt = nowIso();
     const durationMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
@@ -234,28 +252,16 @@ const queue = new InMemoryQueue(async (payload) => {
   }
 });
 
-app.post('/api/jobs', async (req, res) => {
-  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
-    res.status(400).json({ error: 'Cuerpo de solicitud invalido.' });
-    return;
-  }
-
-  const rawUrl = typeof req.body.url === 'string' ? req.body.url.trim() : '';
-  if (rawUrl.length > 2048) {
-    res.status(400).json({ error: 'La URL es demasiado larga.' });
+app.post('/api/jobs', upload.single('audio'), async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: 'Debes seleccionar un archivo de audio compatible.' });
     return;
   }
 
   const requestedMode = typeof req.body.tuningMode === 'string' ? req.body.tuningMode : 'exact';
   const tuningMode = requestedMode in tuningProfiles ? requestedMode : 'exact';
   const targetA4 = tuningProfiles[tuningMode];
-  const url = normalizeYouTubeUrl(rawUrl);
   const clientIp = getClientIp(req);
-
-  if (!url) {
-    res.status(400).json({ error: 'Debes indicar una URL de YouTube.' });
-    return;
-  }
 
   const rate = canCreateJob(clientIp);
   if (!rate.allowed) {
@@ -265,31 +271,25 @@ app.post('/api/jobs', async (req, res) => {
   }
 
   if (queue.getPendingCount() >= MAX_PENDING_JOBS) {
+    await fs.rm(req.file.path, { force: true });
     res.status(503).json({ error: 'La cola esta llena. Intenta de nuevo en unos minutos.' });
     return;
   }
 
   try {
-    await assertVideoConstraints(url);
+    await assertAudioConstraints(req.file.path);
   } catch (error) {
-    if (isAntiBotValidationError(error)) {
-      const job = buildQueuedJob({ url, tuningMode, targetA4 });
-      await enqueueJob(job);
-
-      res.status(202).json({
-        id: job.id,
-        status: job.status,
-        tuningMode,
-        targetA4,
-      });
-      return;
-    }
-
+    await fs.rm(req.file.path, { force: true });
     res.status(400).json({ error: error.message });
     return;
   }
 
-  const job = buildQueuedJob({ url, tuningMode, targetA4 });
+  const job = buildQueuedJob({
+    inputPath: req.file.path,
+    originalFileName: req.file.originalname,
+    tuningMode,
+    targetA4,
+  });
   await enqueueJob(job);
 
   res.status(202).json({
@@ -310,7 +310,8 @@ app.get('/api/jobs/:id', async (req, res) => {
 
   res.json({
     id: job.id,
-    url: job.url,
+    sourceType: job.sourceType,
+    originalFileName: job.originalFileName,
     status: job.status,
     result: job.result,
     createdAt: job.createdAt,
@@ -378,12 +379,32 @@ app.get('/api/download/:id/:format', async (req, res) => {
   res.download(resolved.path, `${id}.${format}`);
 });
 
+app.use((error, _req, res, next) => {
+  if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    res.status(413).json({ error: `El archivo supera el limite de ${Math.round(maxUploadBytes / (1024 * 1024))} MB.` });
+    return;
+  }
+
+  if (error?.message === 'Unexpected field') {
+    res.status(400).json({ error: 'El formulario debe incluir un unico archivo de audio.' });
+    return;
+  }
+
+  if (error) {
+    res.status(400).json({ error: error.message || 'No se pudo recibir el archivo.' });
+    return;
+  }
+
+  next();
+});
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
 async function start() {
   await ensureStore();
+  await fs.mkdir(tmpDir, { recursive: true });
 
   app.listen(port, () => {
     console.log(`cooler listening on http://localhost:${port}`);

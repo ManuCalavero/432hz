@@ -19,22 +19,19 @@
           <p id="js-eyebrow" class="eyebrow"><b>432hz</b></p>
           <h1>Convierte música<br />a su<br />frecuencia natural.</h1>
           <p class="claim">
-            Convierte cualquier audio de YouTube a 432hz en segundos. Sin instalar nada, sin perder calidad.
+            Convierte tus archivos de audio a 432 o 440 Hz en segundos. Sin instalar nada, sin perder calidad.
           </p>
         </header>
 
         <section class="form-section">
           <form id="job-form">
+            <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar archivo de audio">
+              <input id="audio-file" name="audio" type="file" accept=".aac,.flac,.m4a,.mp3,.ogg,.opus,.wav,.webm,audio/*" hidden />
+              <strong>Arrastra tu archivo de audio aquí</strong>
+              <span>o haz clic para seleccionarlo</span>
+              <span id="file-name" class="file-name">MP3, WAV, M4A, FLAC, OGG o AAC · máximo 250 MB</span>
+            </div>
             <div class="input-row">
-              <input
-                id="youtube-url"
-                name="url"
-                type="url"
-                required
-                placeholder="https://www.youtube.com/watch?v=..."
-                autocomplete="off"
-                spellcheck="false"
-              />
               <button type="submit">Convertir</button>
             </div>
             <div class="select-row">
@@ -64,7 +61,7 @@
               <thead>
                 <tr>
                   <th>Fecha</th>
-                  <th>URL</th>
+                  <th>Archivo</th>
                   <th>Perfil</th>
                   <th>Hz</th>
                   <th>Estado</th>

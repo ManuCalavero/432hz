@@ -232,7 +232,7 @@ async function downloadAudio(url, jobId) {
   return matches[0];
 }
 
-async function detectInputSampleRate(inputPath) {
+async function inspectInputAudio(inputPath) {
   return new Promise((resolve, reject) => {
     const child = spawn(ffmpegPath, ['-hide_banner', '-i', inputPath], {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -251,7 +251,7 @@ async function detectInputSampleRate(inputPath) {
     child.on('close', () => {
       const match = stderr.match(/Audio:\s[^\n]*?,\s(\d+)\sHz/i);
       if (!match) {
-        reject(new Error('No se pudo detectar el sample rate del audio de entrada.'));
+        reject(new Error('El archivo no contiene un audio compatible.'));
         return;
       }
 
@@ -261,20 +261,20 @@ async function detectInputSampleRate(inputPath) {
         return;
       }
 
-      resolve(sampleRate);
+      const durationMatch = stderr.match(/Duration:\s(\d+):(\d{2}):(\d{2}(?:\.\d+)?)/i);
+      const durationSeconds = durationMatch
+        ? Number(durationMatch[1]) * 3600 + Number(durationMatch[2]) * 60 + Number(durationMatch[3])
+        : null;
+
+      resolve({ sampleRate, durationSeconds });
     });
   });
 }
 
-async function assertVideoConstraints(url) {
-  if (!isYouTubeUrl(url)) {
-    throw new Error('La URL no es un enlace valido de YouTube.');
-  }
+async function assertAudioConstraints(inputPath) {
+  const info = await inspectInputAudio(inputPath);
 
-  const info = await getVideoInfo(url);
-  const seconds = Number(info.duration || 0);
-
-  if (Number.isFinite(seconds) && seconds > maxAudioSeconds) {
+  if (Number.isFinite(info.durationSeconds) && info.durationSeconds > maxAudioSeconds) {
     throw new Error(`El audio supera el limite de ${Math.round(maxAudioSeconds / 60)} minutos.`);
   }
 
@@ -353,49 +353,48 @@ async function exportWavWithoutPitch({ inputPath, wavPath }) {
   ]);
 }
 
-async function convertTo432Hz({ url, jobId, targetA4 }) {
+async function convertTo432Hz({ inputPath, jobId, targetA4 }) {
   await ensureFolders();
 
   const wavPath = path.join(outputDir, `${jobId}.wav`);
   const mp3Path = path.join(outputDir, `${jobId}.mp3`);
 
-  const inputPath = await downloadAudio(url, jobId);
-  const inputSampleRate = await detectInputSampleRate(inputPath);
+  try {
+    const { sampleRate: inputSampleRate } = await inspectInputAudio(inputPath);
+    const safeTargetA4 = resolveTargetA4(targetA4);
+    const ratio = safeTargetA4 / referenceA4;
+    const tempoFix = referenceA4 / safeTargetA4;
 
-  const safeTargetA4 = resolveTargetA4(targetA4);
-  const ratio = safeTargetA4 / referenceA4;
-  const tempoFix = referenceA4 / safeTargetA4;
+    if (safeTargetA4 === referenceA4) {
+      await exportWavWithoutPitch({ inputPath, wavPath });
+    } else {
+      await exportWavWithPitch({ inputPath, wavPath, ratio, tempoFix, inputSampleRate });
+    }
 
-  if (safeTargetA4 === referenceA4) {
-    await exportWavWithoutPitch({ inputPath, wavPath });
-  } else {
-    await exportWavWithPitch({ inputPath, wavPath, ratio, tempoFix, inputSampleRate });
+    await runFfmpeg([
+      '-y',
+      '-i',
+      wavPath,
+      '-codec:a',
+      'libmp3lame',
+      '-b:a',
+      outputMp3Bitrate,
+      '-ar',
+      String(outputSampleRate),
+      mp3Path,
+    ]);
+
+    return {
+      wavPath,
+      mp3Path,
+      appliedTargetA4: safeTargetA4,
+    };
+  } finally {
+    await fsp.rm(inputPath, { force: true });
   }
-
-  await runFfmpeg([
-    '-y',
-    '-i',
-    wavPath,
-    '-codec:a',
-    'libmp3lame',
-    '-b:a',
-    outputMp3Bitrate,
-    '-ar',
-    String(outputSampleRate),
-    mp3Path,
-  ]);
-
-  await fsp.rm(inputPath, { force: true });
-
-  return {
-    wavPath,
-    mp3Path,
-    appliedTargetA4: safeTargetA4,
-  };
 }
 
 module.exports = {
-  normalizeYouTubeUrl,
-  assertVideoConstraints,
+  assertAudioConstraints,
   convertTo432Hz,
 };
