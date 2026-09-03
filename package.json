@@ -2,21 +2,57 @@
   "name": "cooler",
   "version": "1.0.0",
   "description": "Local audio retuning converter with queue and admin logs",
-  "main": "src/server.js",
+  "main": "src/electron-main.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "desktop": "electron .",
+    "dist": "electron-builder --mac",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win nsis portable",
+    "dist:win:x64": "electron-builder --win nsis portable --x64"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
+    "dotenv": "^17.2.1",
     "express": "^5.2.1",
     "ffmpeg-static": "^5.3.0",
     "helmet": "^8.1.0",
-    "multer": "^2.0.2",
     "morgan": "^1.10.1",
-    "dotenv": "^17.2.1",
+    "multer": "^2.0.2",
     "youtube-dl-exec": "^3.1.7"
+  },
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.cooler.432hz",
+    "productName": "432Hz",
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.music"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "artifactName": "432Hz-${version}-installer-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "432Hz-${version}-portable-${arch}.${ext}"
+    }
   }
 }

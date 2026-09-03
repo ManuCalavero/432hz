@@ -16,11 +16,8 @@
 
       <main class="panel-content">
         <header class="site-header">
-          <p id="js-eyebrow" class="eyebrow"><b>432hz</b></p>
-          <h1>Convierte música<br />a su<br />frecuencia natural.</h1>
-          <p class="claim">
-            Convierte tus archivos de audio a 432 o 440 Hz en segundos. Sin instalar nada, sin perder calidad.
-          </p>
+          <p id="js-eyebrow" class="eyebrow"><b>432hz tuner</b></p>
+          <h1>Convierte música a<br />su frecuencia natural.</h1>
         </header>
 
         <section class="form-section">
@@ -31,10 +28,7 @@
               <span>o haz clic para seleccionarlo</span>
               <span id="file-name" class="file-name">MP3, WAV, M4A, FLAC, OGG o AAC · máximo 250 MB</span>
             </div>
-            <div class="input-row">
-              <button type="submit">Convertir</button>
-            </div>
-            <div class="select-row">
+             <div class="select-row">
               <label id="tuning-mode-label">Perfil de afinación</label>
               <div class="tuning-buttons" role="radiogroup" aria-labelledby="tuning-mode-label">
                 <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">Sin transformación - 440 Hz</button>
@@ -42,6 +36,10 @@
               </div>
               <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
             </div>
+            <div class="input-row">
+              <button type="submit">Convertir</button>
+            </div>
+      
           </form>
           <p id="form-error" class="error hidden"></p>
         </section>
@@ -54,25 +52,6 @@
           <div id="downloads" class="downloads"></div>
         </section>
 
-        <section class="logs-section">
-          <p class="logs-label">Últimas conversiones</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Archivo</th>
-                  <th>Perfil</th>
-                  <th>Hz</th>
-                  <th>Estado</th>
-                  <th>Res.</th>
-                  <th>Tiempo</th>
-                </tr>
-              </thead>
-              <tbody id="logs-body"></tbody>
-            </table>
-          </div>
-        </section>
       </main>
     </div>
     <script src="/app.js"></script>

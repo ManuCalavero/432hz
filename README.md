@@ -5,8 +5,7 @@ App MVP para subir un archivo de audio, retunarlo manteniendo la duracion, y des
 Incluye:
 
 - Cola de procesamiento secuencial (jobs en memoria).
-- Logs persistentes en `data/jobs.json` con estado `ok/ko`, tiempos y errores.
-- Interfaz web para usuario y tabla de logs de admin.
+- El estado de cada conversión se mantiene solo en memoria durante la sesión.
 
 ## Requisitos
 
@@ -48,7 +47,7 @@ asetrate=44100*(targetA4/440),aresample=44100:resampler=soxr:precision=28:cheby=
 
 5. Se exporta WAV PCM 16-bit 44.1 kHz.
 6. Se exporta MP3 320 kbps 44.1 kHz.
-7. Se guarda log final con resultado `ok/ko`.
+7. El resultado se muestra durante la sesión y no se guarda ningún historial.
 
 ## API principal
 
@@ -56,19 +55,18 @@ asetrate=44100*(targetA4/440),aresample=44100:resampler=soxr:precision=28:cheby=
 - `GET /api/jobs/:id` consulta estado y enlaces de descarga si esta completado
 - `GET /api/download/:id/wav` descarga WAV
 - `GET /api/download/:id/mp3` descarga MP3
-- `GET /api/admin/logs` lista de logs para admin
 - `GET /health` estado de servicio
 
 ## Estructura
 
 - `src/server.js`: API, estados y cola
 - `src/audio.js`: descarga y conversion ffmpeg
-- `src/store.js`: persistencia JSON de jobs/logs
+- `src/store.js`: estado temporal de los jobs en memoria
 - `public/`: interfaz web
 
 ## Notas importantes
 
-- La cola actual es en memoria (si reinicias el proceso, solo se preservan logs ya escritos).
+- La cola y el estado de los jobs son temporales; al cerrar la aplicación no se conserva ningún registro.
 - Este MVP asume acceso permitido a contenido de YouTube y no gestiona aspectos legales/licencias.
 - Se limita la duracion maxima del audio a 60 minutos.
 - No requiere instalar `ffmpeg` en el equipo del usuario final (se usa `ffmpeg-static`).

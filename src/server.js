@@ -8,7 +8,7 @@ const helmet = require('helmet');
 const multer = require('multer');
 const morgan = require('morgan');
 const { port, rootDir, tmpDir, outputDir, maxUploadBytes, tuningProfiles } = require('./config');
-const { ensureStore, createJob, updateJob, getJob, getJobs } = require('./store');
+const { createJob, updateJob, getJob } = require('./store');
 const { InMemoryQueue } = require('./queue');
 const { assertAudioConstraints, convertTo432Hz } = require('./audio');
 
@@ -98,47 +98,6 @@ function canDownload(ip) {
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function isAntiBotValidationError(error) {
-  return /verificacion anti-bot/i.test(String(error?.message || error || ''));
-}
-
-function toAdminLog(job) {
-  return {
-    id: job.id,
-    sourceHost: job.sourceType === 'upload' ? 'local' : getSourceHost(job.url),
-    tuningMode: job.tuningMode,
-    targetA4: job.targetA4,
-    status: job.status,
-    result: job.result,
-    startedAt: job.startedAt,
-    finishedAt: job.finishedAt,
-    durationMs: job.durationMs,
-  };
-}
-
-function getSourceHost(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return null;
-  }
-}
-
-function toPublicJob(job) {
-  return {
-    id: job.id,
-    status: job.status,
-    result: job.result,
-    createdAt: job.createdAt,
-    startedAt: job.startedAt,
-    finishedAt: job.finishedAt,
-    durationMs: job.durationMs,
-    tuningMode: job.tuningMode,
-    targetA4: job.targetA4,
-    sourceHost: job.sourceType === 'upload' ? job.originalFileName : getSourceHost(job.url),
-  };
 }
 
 function buildQueuedJob({ inputPath, originalFileName, tuningMode, targetA4 }) {
@@ -331,16 +290,6 @@ app.get('/api/jobs/:id', async (req, res) => {
   });
 });
 
-app.get('/api/jobs', async (_req, res) => {
-  const jobs = await getJobs();
-  res.json(jobs.map(toPublicJob));
-});
-
-app.get('/api/admin/logs', async (_req, res) => {
-  const jobs = await getJobs();
-  res.json(jobs.map(toAdminLog));
-});
-
 app.get('/api/download/:id/:format', async (req, res) => {
   const { id, format } = req.params;
   if (format !== 'wav' && format !== 'mp3') {
@@ -403,15 +352,25 @@ app.get('/health', (_req, res) => {
 });
 
 async function start() {
-  await ensureStore();
   await fs.mkdir(tmpDir, { recursive: true });
 
-  app.listen(port, () => {
-    console.log(`cooler listening on http://localhost:${port}`);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, '127.0.0.1', () => {
+      const address = server.address();
+      const actualPort = typeof address === 'object' && address ? address.port : port;
+      console.log(`cooler listening on http://127.0.0.1:${actualPort}`);
+      resolve(server);
+    });
+
+    server.once('error', reject);
   });
 }
 
-start().catch((error) => {
-  console.error('Unable to start server:', error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  start().catch((error) => {
+    console.error('Unable to start server:', error);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { app, start };

@@ -14,6 +14,15 @@ const {
   defaultTargetA4,
 } = require('./config');
 
+function resolveFfmpegPath() {
+  const packagedMarker = `${path.sep}app.asar${path.sep}`;
+  if (ffmpegPath.includes(packagedMarker)) {
+    return ffmpegPath.replace(packagedMarker, `${path.sep}app.asar.unpacked${path.sep}`);
+  }
+
+  return ffmpegPath;
+}
+
 async function ensureFolders() {
   await fsp.mkdir(tmpDir, { recursive: true });
   await fsp.mkdir(outputDir, { recursive: true });
@@ -49,7 +58,7 @@ async function resolveCookiesFileFromBase64() {
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(resolveFfmpegPath(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
     let stderr = '';
     child.stderr.on('data', (chunk) => {
@@ -234,7 +243,7 @@ async function downloadAudio(url, jobId) {
 
 async function inspectInputAudio(inputPath) {
   return new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, ['-hide_banner', '-i', inputPath], {
+    const child = spawn(resolveFfmpegPath(), ['-hide_banner', '-i', inputPath], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 

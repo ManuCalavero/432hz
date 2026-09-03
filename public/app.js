@@ -11,7 +11,6 @@ const tuningEl = document.getElementById('job-tuning');
 const durationEl = document.getElementById('job-duration');
 const errorEl = document.getElementById('job-error');
 const downloadsEl = document.getElementById('downloads');
-const logsBody = document.getElementById('logs-body');
 
 let pollTimer = null;
 let activeJobId = null;
@@ -83,15 +82,6 @@ function humanStatus(status) {
   return mapping[status] || status;
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
 function modeLabel(mode) {
   const modeLabels = {
     original: 'Sin transformación',
@@ -99,10 +89,6 @@ function modeLabel(mode) {
   };
 
   return modeLabels[mode] || '-';
-}
-
-function renderSourceHost(sourceHost) {
-  return sourceHost ? escapeHtml(sourceHost) : '-';
 }
 
 function setSelectedTuningMode(mode) {
@@ -142,28 +128,6 @@ function setJobView(job) {
   }
 }
 
-async function refreshLogs() {
-  const response = await fetch('/api/admin/logs');
-  const logs = await response.json();
-
-  logsBody.innerHTML = logs
-    .slice(0, 25)
-    .map((row) => {
-      const startedAt = row.startedAt ? new Date(row.startedAt).toLocaleString() : '-';
-      const resultClass = row.result === 'ok' ? 'state-ok' : row.result === 'ko' ? 'state-ko' : '';
-      return `<tr>
-        <td>${escapeHtml(startedAt)}</td>
-        <td>${renderSourceHost(row.sourceHost)}</td>
-        <td>${escapeHtml(modeLabel(row.tuningMode))}</td>
-        <td>${escapeHtml(row.targetA4 || '-')}</td>
-        <td>${escapeHtml(humanStatus(row.status))}</td>
-        <td class="${resultClass}">${escapeHtml(row.result || '-')}</td>
-        <td>${escapeHtml(formatDurationMs(row.durationMs))}</td>
-      </tr>`;
-    })
-    .join('');
-}
-
 async function pollJob(jobId) {
   if (pollTimer) {
     clearTimeout(pollTimer);
@@ -187,7 +151,6 @@ async function pollJob(jobId) {
     }
 
     setJobView(job);
-    await refreshLogs();
 
     if (job.status !== 'completed' && job.status !== 'failed') {
       pollTimer = setTimeout(() => pollJob(jobId), 2000);
@@ -250,6 +213,3 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-refreshLogs().catch(() => {
-  // Ignore initial load errors.
-});
