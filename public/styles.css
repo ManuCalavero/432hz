@@ -1,12 +1,14 @@
 /* ─── Tokens ────────────────────────────────────────────────── */
 :root {
-  --bg: #031006;
-  --surface: rgb(4 22 9 / 0.9);
+  --bg: #04280c;
+  --surface: rgb(9 51 21 / 0.45);
+  --glass-blur: 18px;
+  --glass-highlight: rgb(217 255 208 / 0.08);
   --ink: #d9ffd0;
   --muted: #8bcf80;
   --border: rgb(81 255 57 / 0.3);
   --accent: #39ff14;
-  --on-accent: #031006;
+  --on-accent: #264f30;
   --danger: #ff8f8f;
 
   --display: 'Google Sans', sans-serif;
@@ -31,7 +33,6 @@
 body {
   min-height: 100dvh;
   background-color: var(--bg);
-  background-image: linear-gradient(rgb(3 16 6 / 0.88), rgb(3 16 6 / 0.88)), url('/bg-pttrn.png');
   background-repeat: repeat;
   background-attachment: fixed;
   color: var(--ink);
@@ -39,6 +40,10 @@ body {
   font-size: 1rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  background-image: url('/bg-432-audio-tuner.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 button,
@@ -58,7 +63,7 @@ input {
 
 /* ─── Estructura ────────────────────────────────────────────── */
 .topbar {
-  width: min(640px, 100% - 32px);
+  width: min(720px, 100% - 32px);
   margin: 0 auto;
   padding: 24px 0 0;
 }
@@ -83,19 +88,24 @@ input {
   display: flex;
   flex-direction: column;
   gap: 40px;
-  width: min(640px, 100% - 32px);
+  width: min(720px, 100% - 32px);
   margin: 0 auto;
   padding: 48px 0 64px;
 }
 
-/* Imagen de cabecera de antes: banda a todo el ancho, imagen centrada a su tamaño natural. */
-.header-image {
-  height: 220px;
-  margin-top: 24px;
-  background-image: url('/bg-432-audio-tuner.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.96;
+/* Tarjetas translúcidas que desenfocan el fondo de la página. */
+.hero,
+.panel,
+.history,
+.about,
+.footnote {
+  padding: clamp(20px, 4vw, 32px);
+  background: linear-gradient(135deg, var(--glass-highlight), transparent 60%), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 40px rgb(0 0 0 / 0.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
 }
 
 /* ─── Hero ──────────────────────────────────────────────────── */
@@ -116,13 +126,6 @@ h1 {
 }
 
 /* ─── Panel ─────────────────────────────────────────────────── */
-.panel {
-  padding: clamp(20px, 4vw, 32px);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-panel);
-}
-
 #job-form {
   display: flex;
   flex-direction: column;
@@ -511,7 +514,6 @@ input[type='url']:focus {
 }
 
 .footnote {
-  max-width: 36rem;
   font-size: 0.8125rem;
   color: var(--muted);
 }
