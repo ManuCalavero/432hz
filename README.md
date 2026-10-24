@@ -7,6 +7,37 @@ Incluye:
 - Cola de procesamiento secuencial (jobs en memoria).
 - El estado de cada conversión se mantiene solo en memoria durante la sesión.
 
+## Web en Vercel
+
+La versión web convierte el audio **en el navegador** con ffmpeg.wasm: los archivos del usuario no se suben a ningún servidor.
+Los links de YouTube se descargan con Apify (actor `utils~youtube-link`) a través de la función serverless `api/youtube.js`,
+que es la única que conoce el token.
+
+Variables de entorno en Vercel (Settings → Environment Variables):
+
+- `APIFY_TOKEN` (obligatoria): token de Apify. Solo en Vercel o en `.env` local, nunca en `.env.example`.
+- `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` (obligatorias para YouTube): claves de Cloudflare Turnstile.
+  Sin ellas la conversión desde YouTube queda desactivada. Las claves de prueba de Cloudflare se rechazan en producción.
+- `YOUTUBE_DAILY_LIMIT` (opcional, 30 por defecto): máximo global de descargas de YouTube en 24 h.
+
+`vercel.json` define el build (`npm run build:web`, que copia ffmpeg.wasm a `public/vendor/` y genera
+`public/vendor/config.json` con la clave pública de Turnstile) y las cabeceras de seguridad (CSP).
+
+Protecciones del endpoint `/api/youtube`:
+
+- Anti-bots con Cloudflare Turnstile en cada descarga.
+- Solo acepta links de YouTube; la URL que se envía a Apify se reconstruye a partir del ID del vídeo.
+- Máximo 5 descargas de YouTube por usuario y día (contador en el almacén `432hz-limits` de Apify; solo guarda un hash de la IP),
+  límite global diario y coste máximo por ejecución (0,10 $).
+- Los trabajos se identifican con un token firmado (HMAC) que caduca en 1 hora.
+- El audio se entrega con una URL firmada de solo lectura y se borra de Apify cuando el navegador lo ha descargado.
+
+Analítica: Vercel Web Analytics (actívala en el panel del proyecto). El plan gratuito no tiene eventos personalizados,
+así que cada resultado se registra como una visita a una ruta virtual: `/_evento/youtube-ok`, `/_evento/file-ok`,
+`/_evento/youtube-error-<código>` y `/_evento/file-error-<código>`.
+
+La web está solo en inglés. Los textos generados desde JavaScript están en `public/i18n.js`.
+
 ## Requisitos
 
 - Node.js 18+

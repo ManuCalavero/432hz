@@ -11,6 +11,8 @@ const { port, rootDir, tmpDir, outputDir, maxUploadBytes, tuningProfiles } = req
 const { createJob, updateJob, getJob } = require('./store');
 const { InMemoryQueue } = require('./queue');
 const { assertAudioConstraints, convertTo432Hz } = require('./audio');
+const youtubeHandler = require('../api/youtube');
+const vercelConfig = require('../vercel.json');
 
 const app = express();
 const bindHost = process.env.HOST || (process.env.RENDER ? '0.0.0.0' : '127.0.0.1');
@@ -41,23 +43,19 @@ const upload = multer({
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        "default-src": ["'self'"],
-        "connect-src": ["'self'"],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", 'https://fonts.googleapis.com'],
-        "font-src": ["'self'", 'https://fonts.gstatic.com', 'data:'],
-        "img-src": ["'self'", 'data:'],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-  })
-);
+// Mismas cabeceras de seguridad que en Vercel (vercel.json es la única fuente). En local se sirve por
+// http, así que se quita upgrade-insecure-requests.
+const securityHeaders = vercelConfig.headers.find((rule) => rule.source === '/(.*)').headers;
+
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use((_req, res, next) => {
+  for (const { key, value } of securityHeaders) {
+    res.setHeader(key, value.replace(/;\s*upgrade-insecure-requests/, ''));
+  }
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
+app.all('/api/youtube', (req, res) => youtubeHandler(req, res));
 app.use(morgan('dev'));
 app.use(express.static(path.join(rootDir, 'public'), { dotfiles: 'deny' }));
 

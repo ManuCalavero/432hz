@@ -5,3 +5,5 @@ storage/tmp/
 .DS_Store
 *-base.js
 .env
+public/vendor/
+.vercel

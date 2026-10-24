@@ -1,59 +1,129 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>432Hz</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
-
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="theme-color" content="#031006" />
+    <title>432 · Retune any song to 432 Hz</title>
+    <meta name="description" content="Retune a song or a YouTube video to 432 Hz and keep its exact length. Free, and it runs in your browser: your files are never uploaded." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:wght@400..600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="layout">
-      <div class="panel-image" aria-hidden="true"></div>
 
-      <main class="panel-content">
-        <header class="site-header">
-          <p id="js-eyebrow" class="eyebrow"><b>432hz tuner</b></p>
-          <h1>Convierte música a<br />su frecuencia natural.</h1>
-        </header>
+    <header class="topbar">
+      <a class="wordmark" href="/" aria-label="432 home">
+        <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
+          <path d="M2 18 9 2h4L6 18Z" /><path d="M10 18 17 2h4l-7 16Z" /><path d="M18 18 25 2h1v6l-4.4 10Z" />
+        </svg>
+        432
+      </a>
+    </header>
 
-        <section class="form-section">
-          <form id="job-form">
-            <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar archivo de audio">
-              <input id="audio-file" name="audio" type="file" accept=".aac,.flac,.m4a,.mp3,.ogg,.opus,.wav,.webm,audio/*" hidden />
-              <strong>Arrastra tu archivo de audio aquí</strong>
-              <span>o haz clic para seleccionarlo</span>
-              <span id="file-name" class="file-name">MP3, WAV, M4A, FLAC, OGG o AAC · máximo 250 MB</span>
-            </div>
-             <div class="select-row">
-              <label id="tuning-mode-label">Perfil de afinación</label>
-              <div class="tuning-buttons" role="radiogroup" aria-labelledby="tuning-mode-label">
-                <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">Sin transformación - 440 Hz</button>
-                <button type="button" class="tuning-btn" data-value="exact" aria-pressed="true">Exacto - 432 Hz</button>
-              </div>
-              <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
-            </div>
-            <div class="input-row">
-              <button type="submit">Convertir</button>
-            </div>
-      
-          </form>
-          <p id="form-error" class="error hidden"></p>
-        </section>
+    <div class="header-image" aria-hidden="true"></div>
 
-        <section id="job-panel" class="job-panel hidden">
+    <main class="page">
+      <section class="hero">
+        <h1>Retune any song<br />to 432&nbsp;Hz.</h1>
+        <p class="lede">Paste a YouTube link or drop a file. We lower the pitch by 32 cents and keep the exact length. It all runs in your browser.</p>
+      </section>
+
+      <section class="panel" aria-label="Converter">
+        <form id="job-form" novalidate>
+          <label for="youtube-url" class="field-label">YouTube link</label>
+          <div class="link-row">
+            <input
+              id="youtube-url"
+              name="youtubeUrl"
+              type="url"
+              inputmode="url"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              maxlength="200"
+              placeholder="https://youtu.be/…"
+            />
+            <button id="paste-btn" type="button" class="ghost-btn hidden">Paste</button>
+          </div>
+          <div id="video-preview" class="video-preview hidden" aria-live="polite">
+            <img id="video-thumb" alt="" width="96" height="54" />
+            <span id="video-title"></span>
+          </div>
+          <div id="captcha" class="captcha"></div>
+
+          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Choose an audio file">
+            <input id="audio-file" name="audio" type="file" accept=".aac,.flac,.m4a,.mp3,.ogg,.opus,.wav,.webm,audio/*" hidden />
+            <span class="drop-main">or drop an audio file — <u>browse</u></span>
+            <span id="file-name" class="file-name"></span>
+          </div>
+
+          <div class="tune-row">
+            <span id="tuning-mode-label" class="field-label">Tuning</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="tuning-mode-label">
+              <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">440 Hz · original</button>
+              <button type="button" class="tuning-btn" data-value="exact" aria-pressed="true">432 Hz</button>
+            </div>
+            <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
+          </div>
+
+          <button id="submit-btn" type="submit" class="primary-btn">Convert</button>
+        </form>
+        <p id="form-error" class="error hidden" role="alert"></p>
+
+        <div id="job-panel" class="job hidden" aria-live="polite">
           <p id="job-status" class="job-status"></p>
-          <p id="job-tuning" class="job-meta"></p>
-          <p id="job-duration" class="job-meta"></p>
+          <progress id="job-progress" class="job-progress hidden" max="1" value="0"></progress>
+          <p id="job-meta" class="job-meta"></p>
           <p id="job-error" class="error"></p>
-          <div id="downloads" class="downloads"></div>
-        </section>
 
-      </main>
-    </div>
-    <script src="/app.js"></script>
+          <div id="ab-player" class="ab hidden">
+            <p class="field-label">Hear the difference</p>
+            <div class="ab-controls">
+              <button id="ab-play" type="button" class="ab-play" aria-pressed="false">Listen</button>
+              <div class="segmented" role="radiogroup" aria-label="Version playing">
+                <button type="button" class="ab-option" data-ab="original" aria-pressed="false">Original · 440</button>
+                <button type="button" class="ab-option" data-ab="tuned" aria-pressed="true">Retuned · <span id="ab-tuned-hz">432</span></button>
+              </div>
+            </div>
+            <p class="hint">A 30-second clip. Switch while it plays.</p>
+          </div>
+
+          <div id="downloads" class="downloads hidden">
+            <a id="download-mp3" class="primary-btn" href="#">Download MP3</a>
+            <button id="download-wav" type="button" class="text-btn">Download WAV</button>
+          </div>
+          <p id="job-remaining" class="hint"></p>
+        </div>
+      </section>
+
+      <section id="history" class="history hidden" aria-labelledby="history-title">
+        <div class="history-head">
+          <h2 id="history-title">Recent</h2>
+          <button id="history-clear" type="button" class="link-btn">Clear</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+        <p class="hint">Stored only in this browser.</p>
+      </section>
+
+      <details class="about">
+        <summary>What is 432 Hz?</summary>
+        <div class="about-body">
+          <p>Almost all modern music is tuned with the note A at <strong>440 Hz</strong>, the international standard (ISO 16). Tuning to <strong>432 Hz</strong> lowers every note by 1.8%, about 32 cents: less than a third of a semitone.</p>
+          <p><strong>What this tool does:</strong> it lowers the pitch of the whole song by that amount and corrects the speed so it lasts exactly as long. Nothing else changes.</p>
+          <p><strong>To be honest:</strong> many people hear the result as slightly warmer and softer, but there is no solid scientific evidence that 432 Hz has special effects on health or wellbeing. It's a matter of taste. Use the comparison and decide for yourself.</p>
+          <p>If the original song wasn't tuned to 440 Hz, the result won't be exactly 432 Hz either.</p>
+        </div>
+      </details>
+
+      <footer class="footnote">
+        Conversion happens in your browser: your files are never uploaded. YouTube links are fetched through an external service (Apify) and the audio is deleted there as soon as it reaches you. Cookie-free analytics.
+      </footer>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+    <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>
