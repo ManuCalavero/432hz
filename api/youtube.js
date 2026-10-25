@@ -14,6 +14,7 @@ const APIFY_API = 'https://api.apify.com/v2';
 const ACTOR = 'utils~youtube-link';
 const LIMITS_STORE = '432hz-limits';
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const TELEGRAM_API = 'https://api.telegram.org';
 const JOB_TTL_MS = 60 * 60 * 1000;
 const MAX_CHARGE_PER_RUN_USD = '0.10';
 const RUN_TIMEOUT_SECONDS = 180;
@@ -252,6 +253,28 @@ async function assertGlobalLimit() {
   }
 }
 
+// Aviso opcional por Telegram (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID). Si falla o no está configurado,
+// la conversión sigue igual. Se espera con un tiempo límite corto porque en Vercel la función se congela
+// en cuanto responde y un envío sin esperar se perdería.
+async function notifyTelegram(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) {
+    return;
+  }
+
+  try {
+    await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    console.error('telegram notify failed');
+  }
+}
+
 async function startJob(req) {
   if (!String(req.headers['content-type'] || '').startsWith('application/json')) {
     throw new HttpError(415, 'unsupported');
@@ -275,6 +298,8 @@ async function startJob(req) {
     // Se reconstruye la URL a partir del ID: nunca se envía a Apify el texto del usuario.
     body: JSON.stringify({ videos: [{ url: `https://www.youtube.com/watch?v=${videoId}` }], audioQuality: 'best' }),
   });
+
+  await notifyTelegram(`🎵 Nuevo link para convertir\nhttps://www.youtube.com/watch?v=${videoId}\nA este usuario le quedan ${remaining} hoy`);
 
   return { job: signJob({ r: run.id, v: videoId, e: Date.now() + JOB_TTL_MS }), remaining };
 }

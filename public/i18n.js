@@ -1,6 +1,5 @@
 // Textos generados desde JavaScript (los textos fijos están en index.html).
 const messages = {
-  fileHint: 'MP3, WAV, M4A, FLAC, OGG or AAC · up to {mb} MB',
   youtubeVideo: 'YouTube video',
   pasteDenied: "Couldn't read the clipboard. Paste the link manually.",
   status: {
@@ -8,7 +7,6 @@ const messages = {
     checking: "Checking you're not a bot…",
     downloading: 'Downloading audio from YouTube…',
     receiving: 'Receiving audio…',
-    reading: 'Reading file…',
     loadingEngine: 'Loading the audio engine…',
     converting: 'Retuning to {hz} Hz…',
     preview: 'Preparing the comparison…',
@@ -21,9 +19,8 @@ const messages = {
   ab: { play: 'Listen', pause: 'Pause' },
   history: { youtube: 'YouTube', file: 'File', reuse: 'Use link' },
   errors: {
-    empty: 'Paste a YouTube link or choose an audio file.',
+    empty: 'Paste a YouTube link.',
     invalid_url: 'Paste a valid YouTube video link.',
-    file_too_big: 'The file is larger than {mb} MB.',
     too_long: 'The audio is longer than {min} minutes.',
     convert_failed: "Couldn't convert the audio. Is it a valid audio file?",
     slow: 'The download is taking too long. Please try again.',
@@ -31,8 +28,8 @@ const messages = {
     audio_too_big: 'The audio is too large.',
     captcha: "Couldn't verify you're not a bot. Please try again.",
     captcha_unavailable: 'Bot protection is unavailable. Please try again later.',
-    user_limit: "You've used today's 5 YouTube conversions. Audio files are still unlimited.",
-    global_limit: "Today's YouTube limit has been reached. Come back tomorrow or upload a file.",
+    user_limit: "You've used today's 5 YouTube conversions. Come back tomorrow.",
+    global_limit: "Today's YouTube limit has been reached. Come back tomorrow.",
     not_configured: 'YouTube conversion is not available right now.',
     quota_exhausted: 'YouTube conversion has reached its usage limit. Please try again later.',
     upstream: "Couldn't reach the download service.",

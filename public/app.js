@@ -11,9 +11,6 @@ const previewEl = $('video-preview');
 const previewThumb = $('video-thumb');
 const previewTitle = $('video-title');
 const captchaEl = $('captcha');
-const dropZone = $('drop-zone');
-const audioInput = $('audio-file');
-const fileNameEl = $('file-name');
 const tuningModeInput = $('tuning-mode');
 const tuningModeButtons = document.querySelectorAll('.tuning-btn');
 const formError = $('form-error');
@@ -50,7 +47,6 @@ const HISTORY_MAX = 10;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be']);
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
-let selectedFile = null;
 let busy = false;
 let ffmpeg = null;
 let current = null; // { inputName, coverSource, title, targetA4, durationSeconds, mp3Url, wavUrl }
@@ -82,13 +78,6 @@ function parseVideoId(input) {
   }
 
   return id && VIDEO_ID.test(id) ? id : null;
-}
-
-function formatFileSize(bytes) {
-  if (bytes < 1024 * 1024) {
-    return `${Math.ceil(bytes / 1024)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDuration(seconds) {
@@ -304,19 +293,7 @@ historyClear.addEventListener('click', () => {
   renderHistory();
 });
 
-// ─── Selección de origen: link o archivo ─────────────────────
-
-fileNameEl.textContent = t('fileHint', { mb: MAX_FILE_BYTES / (1024 * 1024) });
-
-function setSelectedFile(file) {
-  selectedFile = file;
-  dropZone.classList.toggle('has-file', Boolean(file));
-  fileNameEl.textContent = file ? `${file.name} · ${formatFileSize(file.size)}` : t('fileHint', { mb: MAX_FILE_BYTES / (1024 * 1024) });
-  if (file) {
-    urlInput.value = '';
-    hidePreview();
-  }
-}
+// ─── Link de YouTube ──────────────────────────────────────────
 
 function hidePreview() {
   previewRequest += 1;
@@ -360,10 +337,6 @@ function onLinkChange() {
     return;
   }
 
-  if (selectedFile) {
-    audioInput.value = '';
-    setSelectedFile(null);
-  }
   previewTimer = setTimeout(() => showPreview(videoId), 300);
 }
 
@@ -387,33 +360,6 @@ if (navigator.clipboard?.readText) {
     }
   });
 }
-
-dropZone.addEventListener('click', () => audioInput.click());
-dropZone.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    audioInput.click();
-  }
-});
-audioInput.addEventListener('change', () => setSelectedFile(audioInput.files[0] || null));
-
-['dragenter', 'dragover'].forEach((eventName) => {
-  dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    dropZone.classList.add('is-dragging');
-  });
-});
-
-['dragleave', 'drop'].forEach((eventName) => {
-  dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    dropZone.classList.remove('is-dragging');
-  });
-});
-
-dropZone.addEventListener('drop', (event) => {
-  setSelectedFile(event.dataTransfer.files[0] || null);
-});
 
 function setSelectedTuningMode(mode) {
   tuningModeInput.value = mode;
@@ -848,36 +794,20 @@ form.addEventListener('submit', async (event) => {
   const videoId = link ? parseVideoId(link) : null;
   const targetA4 = TUNING_PROFILES[tuningModeInput.value] ?? TUNING_PROFILES.exact;
 
-  if (!link && !selectedFile) {
+  if (!link) {
     showFormError(t('errors.empty'));
     return;
   }
-  if (link && !videoId) {
+  if (!videoId) {
     showFormError(t('errors.invalid_url'));
     return;
   }
-  if (!link && selectedFile.size > MAX_FILE_BYTES) {
-    showFormError(t('errors.file_too_big', { mb: MAX_FILE_BYTES / (1024 * 1024) }));
-    return;
-  }
 
-  const sourceType = link ? 'youtube' : 'file';
   setBusy(true);
   const startedAt = performance.now();
 
   try {
-    let source;
-    if (link) {
-      source = await fetchYoutubeAudio(link, videoId);
-    } else {
-      setStatus('reading', NaN);
-      source = {
-        bytes: new Uint8Array(await selectedFile.arrayBuffer()),
-        cover: null,
-        extension: selectedFile.name.split('.').pop().toLowerCase(),
-        title: selectedFile.name.replace(/\.[^.]+$/, ''),
-      };
-    }
+    const source = await fetchYoutubeAudio(link, videoId);
 
     await loadInput(source, targetA4);
     current.mp3Url = await encodeMp3();
@@ -901,8 +831,8 @@ form.addEventListener('submit', async (event) => {
       remainingEl.textContent = source.remaining === 1 ? t('remainingOne') : t('remaining', { n: source.remaining });
     }
 
-    addToHistory({ title: current.title, source: sourceType, videoId, hz: targetA4 });
-    track(`${sourceType}-ok`);
+    addToHistory({ title: current.title, source: 'youtube', videoId, hz: targetA4 });
+    track('youtube-ok');
   } catch (error) {
     const code = error instanceof AppError ? error.code : 'unexpected';
     if (code === 'unexpected') {
@@ -914,7 +844,7 @@ form.addEventListener('submit', async (event) => {
     }
     setStatus('error');
     errorEl.textContent = error instanceof AppError ? error.message : t('errors.unexpected');
-    track(`${sourceType}-error-${code}`);
+    track(`youtube-error-${code}`);
   } finally {
     setBusy(false);
   }

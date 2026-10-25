@@ -1,20 +1,26 @@
 /* ─── Tokens ────────────────────────────────────────────────── */
 :root {
-  --bg: #04280c;
-  --surface: rgb(9 51 21 / 0.45);
-  --glass-blur: 18px;
-  --glass-highlight: rgb(217 255 208 / 0.08);
-  --ink: #d9ffd0;
-  --muted: #8bcf80;
-  --border: rgb(81 255 57 / 0.3);
-  --accent: #39ff14;
-  --on-accent: #264f30;
+  --bg: #262521;
+  --glass: rgb(255 255 255 / 0.02);
+  --glass-blur: 4px;
+  --glass-edge-blur: 14px;
+  --glass-edge: 28px;
+  --glass-highlight: rgb(255 255 255 / 0.4);
+  --glass-border: rgb(255 255 255 / 0.2);
+  --field: rgb(0 0 0 / 0.22);
+  --ink: #fff;
+  --muted: #fff;
+  --border: rgb(255 255 255 / 0.18);
+  --accent: #90fd7b;
+  --accent-glow: rgb(255 255 255 / 0.5);
+  --on-accent: #2a1d00;
   --danger: #ff8f8f;
 
   --display: 'Google Sans', sans-serif;
+  --claim: 'Unbounded', sans-serif;
   --body: 'Inter', system-ui, sans-serif;
 
-  --r-control: 14px;
+  --r-control: 100px;
   --r-panel: 22px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -40,7 +46,7 @@ body {
   font-size: 1rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-image: url('/bg-432-audio-tuner.png');
+  background-image: url('/D43EC836-648F-4331-8B24-D2C26155DE94.JPG');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -61,11 +67,18 @@ input {
   display: none !important;
 }
 
-/* ─── Estructura ────────────────────────────────────────────── */
-.topbar {
-  width: min(720px, 100% - 32px);
+/* ─── Estructura (mobile first: todo apilado) ─────────────── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: min(720px, 100%);
   margin: 0 auto;
-  padding: 24px 0 0;
+  padding: 40px 16px 32px;
+}
+
+.topbar {
+  margin-bottom: -8px;
 }
 
 .wordmark {
@@ -84,48 +97,82 @@ input {
   fill: var(--accent);
 }
 
-.page {
+/* Zona de acción: cristal con tinte blanco que desenfoca el fondo de la página.
+   Dos capas de cristal: ::before desenfoca poco todo el panel y ::after desenfoca mucho solo el marco,
+   así el centro queda casi nítido y los bordes se difuminan. El scroll va en .stage-body para que
+   las capas no se desplacen con el contenido. */
+.stage {
+  position: relative;
+  isolation: isolate;
   display: flex;
-  flex-direction: column;
-  gap: 40px;
-  width: min(720px, 100% - 32px);
-  margin: 0 auto;
-  padding: 48px 0 64px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-panel);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.3);
+  overflow: hidden;
 }
 
-/* Tarjetas translúcidas que desenfocan el fondo de la página. */
-.hero,
-.panel,
-.history,
-.about,
-.footnote {
+.stage::before,
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stage::before {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+/* .stage::after {
+  -webkit-backdrop-filter: blur(var(--glass-edge-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-edge-blur)) saturate(160%);
+  --edge-x: linear-gradient(to right, #000, transparent var(--glass-edge), transparent calc(100% - var(--glass-edge)), #000);
+  --edge-y: linear-gradient(to bottom, #000, transparent var(--glass-edge), transparent calc(100% - var(--glass-edge)), #000);
+  -webkit-mask-image: var(--edge-x), var(--edge-y);
+  mask-image: var(--edge-x), var(--edge-y);
+} */
+
+/* Brillo del canto: luz arriba a la izquierda, reflejo tenue abajo a la derecha. */
+.stage-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
   padding: clamp(20px, 4vw, 32px);
-  background: linear-gradient(135deg, var(--glass-highlight), transparent 60%), var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-panel);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 40px rgb(0 0 0 / 0.25);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.1), transparent 35%);
+  border-radius: inherit;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
 /* ─── Hero ──────────────────────────────────────────────────── */
 h1 {
-  font-family: var(--display);
-  font-size: clamp(2.75rem, 9vw, 5.25rem);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  font-family: var(--claim);
+  font-size: clamp(2.25rem, 5.6vw, 5rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
 .lede {
   max-width: 34rem;
   margin-top: 20px;
-  font-size: 1.125rem;
-  color: var(--muted);
+  font-size: clamp(1.125rem, 1.6vw, 1.75rem);
+  line-height: 1.35;
 }
 
 /* ─── Panel ─────────────────────────────────────────────────── */
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 #job-form {
   display: flex;
   flex-direction: column;
@@ -139,46 +186,60 @@ h1 {
   color: var(--muted);
 }
 
-.link-row {
-  display: flex;
-  gap: 8px;
+.link-field {
+  position: relative;
 }
 
 input[type='url'] {
-  flex: 1;
-  min-width: 0;
-  height: 52px;
-  padding: 0 16px;
+  width: 100%;
+  height: 56px;
+  padding: 0 60px 0 18px;
   font-size: 1rem; /* 16px: evita el zoom automático de iOS */
-  background: var(--bg);
+  background: var(--field);
   border: 1px solid var(--border);
   border-radius: var(--r-control);
-  transition: border-color 160ms var(--ease);
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
 }
 
 input[type='url']::placeholder {
-  color: var(--muted);
+  color: rgb(255 255 255 / 0.5);
 }
 
 input[type='url']:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgb(255 209 102 / 0.18);
 }
 
-.ghost-btn {
-  flex: none;
-  height: 52px;
-  padding: 0 18px;
-  font-weight: 600;
+/* Icono de pegar dentro del campo, a la derecha. */
+.paste-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: rgb(255 255 255 / 0.7);
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--r-control);
+  border: none;
+  border-radius: 100px;
   cursor: pointer;
-  transition: border-color 160ms var(--ease);
+  transform: translateY(-50%);
+  transition: color 160ms var(--ease), background-color 160ms var(--ease);
 }
 
-.ghost-btn:hover {
-  border-color: var(--muted);
+.paste-btn:hover {
+  color: var(--ink);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.paste-btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .video-preview {
@@ -210,58 +271,24 @@ input[type='url']:focus {
   display: none;
 }
 
-.drop-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 18px 16px;
-  text-align: center;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  border-radius: var(--r-control);
-  cursor: pointer;
-  transition: border-color 160ms var(--ease), color 160ms var(--ease);
-}
-
-.drop-zone:hover,
-.drop-zone.is-dragging,
-.drop-zone.has-file {
-  color: var(--ink);
-  border-color: var(--accent);
-}
-
-.drop-main u {
-  text-underline-offset: 3px;
-}
-
-.file-name {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 0.8125rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .tune-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
   margin-top: 4px;
 }
 
 /* Control segmentado: mismo componente para afinación y comparador. */
 .segmented {
-  display: inline-flex;
+  display: flex;
   padding: 4px;
-  background: var(--bg);
+  background: var(--field);
   border: 1px solid var(--border);
   border-radius: 999px;
 }
 
 .segmented button {
+  flex: 1;
   padding: 8px 14px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -319,6 +346,66 @@ input[type='url']:focus {
 
 .error:empty {
   display: none;
+}
+
+/* ─── Estado vacío: ocupa el hueco hasta que hay resultado ──── */
+.stage-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 180px;
+  margin-top: 28px;
+  text-align: center;
+}
+
+.panel:has(.job:not(.hidden)) .stage-empty {
+  display: none;
+}
+
+.stage-empty svg {
+  width: 100%;
+  max-width: 320px;
+  height: 80px;
+  overflow: visible;
+}
+
+.stage-empty path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.wave-440 {
+  stroke: rgb(255 255 255 / 0.5);
+  stroke-dasharray: 4 6;
+}
+
+.wave-432 {
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.key::before {
+  content: '';
+  width: 14px;
+  border-top: 2px dashed rgb(255 255 255 / 0.35);
+}
+
+.key-432::before {
+  border-top: 2px solid var(--accent);
 }
 
 /* ─── Resultado ─────────────────────────────────────────────── */
@@ -379,9 +466,8 @@ input[type='url']:focus {
 
 .ab-controls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .ab-play {
@@ -411,9 +497,9 @@ input[type='url']:focus {
 
 .downloads {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 20px;
-  flex-wrap: wrap;
+  text-align: center;
 }
 
 .text-btn,
@@ -447,6 +533,11 @@ input[type='url']:focus {
 }
 
 /* ─── Historial ─────────────────────────────────────────────── */
+.history {
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
 .history-head {
   display: flex;
   align-items: baseline;
@@ -514,29 +605,91 @@ input[type='url']:focus {
 }
 
 .footnote {
+  max-width: 36rem;
   font-size: 0.8125rem;
   color: var(--muted);
 }
 
-/* ─── Móvil ─────────────────────────────────────────────────── */
-@media (max-width: 520px) {
+/* ─── Pantallas medianas: controles en fila ─────────────────── */
+@media (min-width: 521px) {
   .tune-row,
   .ab-controls {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .tune-row {
+    justify-content: space-between;
   }
 
   .segmented {
-    display: flex;
+    display: inline-flex;
   }
 
   .segmented button {
-    flex: 1;
+    flex: none;
   }
 
   .downloads {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+}
+
+/* ─── Escritorio: texto a la izquierda, acción a la derecha ─── */
+@media (min-width: 960px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(400px, 34vw, 600px);
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      'brand stage'
+      'hero  stage'
+      'about stage'
+      'foot  stage';
+    column-gap: clamp(48px, 8vw, 160px);
+    row-gap: 32px;
+    width: 100%;
+    min-height: 100dvh;
+    padding: 24px 32px 32px clamp(24px, 4vw, 74px);
+  }
+
+  .topbar {
+    grid-area: brand;
+  }
+
+  .hero {
+    grid-area: hero;
+    max-width: 52rem;
+    padding-top: clamp(16px, 4vh, 48px);
+  }
+
+  .about {
+    grid-area: about;
+    align-self: start;
+    max-width: 40rem;
+  }
+
+  .footnote {
+    grid-area: foot;
+    align-self: end;
+    max-width: 52rem;
+  }
+
+  /* Ocupa el alto de la pantalla y hace scroll por dentro si el contenido no cabe. */
+  .stage {
+    grid-area: stage;
+    align-self: start;
+    position: sticky;
+    top: 32px;
+    height: calc(100dvh - 64px);
+  }
+
+  .stage-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }

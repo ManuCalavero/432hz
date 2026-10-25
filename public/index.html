@@ -4,107 +4,119 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta name="theme-color" content="#031006" />
+    <meta name="theme-color" content="#262521" />
     <title>432 · Retune any song to 432 Hz</title>
-    <meta name="description" content="Retune a song or a YouTube video to 432 Hz and keep its exact length. Free, and it runs in your browser: your files are never uploaded." />
+    <meta name="description" content="Retune any YouTube song to 432 Hz and keep its exact length. Free, and the conversion runs in your browser." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:wght@400..600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:wght@400..600&family=Unbounded:wght@500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
 
-    <header class="topbar">
-      <a class="wordmark" href="/" aria-label="432 home">
-        <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
-          <path d="M2 18 9 2h4L6 18Z" /><path d="M10 18 17 2h4l-7 16Z" /><path d="M18 18 25 2h1v6l-4.4 10Z" />
-        </svg>
-        432
-      </a>
-    </header>
+    <main class="layout">
+      <header class="topbar">
+        <a class="wordmark" href="/" aria-label="432 home">
+          <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
+            <path d="M2 18 9 2h4L6 18Z" /><path d="M10 18 17 2h4l-7 16Z" /><path d="M18 18 25 2h1v6l-4.4 10Z" />
+          </svg>
+          432
+        </a>
+      </header>
 
-    <main class="page">
       <section class="hero">
         <h1>Retune any song<br />to 432&nbsp;Hz.</h1>
-        <p class="lede">Paste a YouTube link or drop a file. We lower the pitch by 32 cents and keep the exact length. It all runs in your browser.</p>
+        <p class="lede">Paste a YouTube link. We lower the pitch by 32 cents and keep the exact length. It all runs in your browser.</p>
       </section>
 
-      <section class="panel" aria-label="Converter">
-        <form id="job-form" novalidate>
-          <label for="youtube-url" class="field-label">YouTube link</label>
-          <div class="link-row">
-            <input
-              id="youtube-url"
-              name="youtubeUrl"
-              type="url"
-              inputmode="url"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              maxlength="200"
-              placeholder="https://youtu.be/…"
-            />
-            <button id="paste-btn" type="button" class="ghost-btn hidden">Paste</button>
-          </div>
-          <div id="video-preview" class="video-preview hidden" aria-live="polite">
-            <img id="video-thumb" alt="" width="96" height="54" />
-            <span id="video-title"></span>
-          </div>
-          <div id="captcha" class="captcha"></div>
-
-          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Choose an audio file">
-            <input id="audio-file" name="audio" type="file" accept=".aac,.flac,.m4a,.mp3,.ogg,.opus,.wav,.webm,audio/*" hidden />
-            <span class="drop-main">or drop an audio file — <u>browse</u></span>
-            <span id="file-name" class="file-name"></span>
-          </div>
-
-          <div class="tune-row">
-            <span id="tuning-mode-label" class="field-label">Tuning</span>
-            <div class="segmented" role="radiogroup" aria-labelledby="tuning-mode-label">
-              <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">440 Hz · original</button>
-              <button type="button" class="tuning-btn" data-value="exact" aria-pressed="true">432 Hz</button>
-            </div>
-            <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
-          </div>
-
-          <button id="submit-btn" type="submit" class="primary-btn">Convert</button>
-        </form>
-        <p id="form-error" class="error hidden" role="alert"></p>
-
-        <div id="job-panel" class="job hidden" aria-live="polite">
-          <p id="job-status" class="job-status"></p>
-          <progress id="job-progress" class="job-progress hidden" max="1" value="0"></progress>
-          <p id="job-meta" class="job-meta"></p>
-          <p id="job-error" class="error"></p>
-
-          <div id="ab-player" class="ab hidden">
-            <p class="field-label">Hear the difference</p>
-            <div class="ab-controls">
-              <button id="ab-play" type="button" class="ab-play" aria-pressed="false">Listen</button>
-              <div class="segmented" role="radiogroup" aria-label="Version playing">
-                <button type="button" class="ab-option" data-ab="original" aria-pressed="false">Original · 440</button>
-                <button type="button" class="ab-option" data-ab="tuned" aria-pressed="true">Retuned · <span id="ab-tuned-hz">432</span></button>
+      <div class="stage">
+        <div class="stage-body">
+          <section class="panel" aria-label="Converter">
+            <form id="job-form" novalidate>
+              <label for="youtube-url" class="field-label">YouTube link</label>
+              <div class="link-field">
+                <input
+                  id="youtube-url"
+                  name="youtubeUrl"
+                  type="url"
+                  inputmode="url"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  maxlength="200"
+                  placeholder="https://youtu.be/…"
+                />
+                <button id="paste-btn" type="button" class="paste-btn hidden" aria-label="Paste link" title="Paste link">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <rect x="8" y="3" width="8" height="4" rx="1.5" />
+                    <path d="M16 5h1.5A2.5 2.5 0 0 1 20 7.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5H8" />
+                  </svg>
+                </button>
               </div>
+              <div id="video-preview" class="video-preview hidden" aria-live="polite">
+                <img id="video-thumb" alt="" width="96" height="54" />
+                <span id="video-title"></span>
+              </div>
+              <div id="captcha" class="captcha"></div>
+
+              <div class="tune-row">
+                <span id="tuning-mode-label" class="field-label">Tuning</span>
+                <div class="segmented" role="radiogroup" aria-labelledby="tuning-mode-label">
+                  <button type="button" class="tuning-btn" data-value="original" aria-pressed="false">440 Hz · original</button>
+                  <button type="button" class="tuning-btn" data-value="exact" aria-pressed="true">432 Hz</button>
+                </div>
+                <input id="tuning-mode" name="tuningMode" type="hidden" value="exact" />
+              </div>
+
+              <button id="submit-btn" type="submit" class="primary-btn">Convert</button>
+            </form>
+            <p id="form-error" class="error hidden" role="alert"></p>
+
+            <div class="stage-empty" aria-hidden="true">
+              <svg viewBox="0 0 320 120" preserveAspectRatio="none">
+                <path class="wave-440" d="M0,60.0 L4,47.0 L8,36.0 L12,28.6 L16,26.0 L20,28.6 L24,36.0 L28,47.0 L32,60.0 L36,73.0 L40,84.0 L44,91.4 L48,94.0 L52,91.4 L56,84.0 L60,73.0 L64,60.0 L68,47.0 L72,36.0 L76,28.6 L80,26.0 L84,28.6 L88,36.0 L92,47.0 L96,60.0 L100,73.0 L104,84.0 L108,91.4 L112,94.0 L116,91.4 L120,84.0 L124,73.0 L128,60.0 L132,47.0 L136,36.0 L140,28.6 L144,26.0 L148,28.6 L152,36.0 L156,47.0 L160,60.0 L164,73.0 L168,84.0 L172,91.4 L176,94.0 L180,91.4 L184,84.0 L188,73.0 L192,60.0 L196,47.0 L200,36.0 L204,28.6 L208,26.0 L212,28.6 L216,36.0 L220,47.0 L224,60.0 L228,73.0 L232,84.0 L236,91.4 L240,94.0 L244,91.4 L248,84.0 L252,73.0 L256,60.0 L260,47.0 L264,36.0 L268,28.6 L272,26.0 L276,28.6 L280,36.0 L284,47.0 L288,60.0 L292,73.0 L296,84.0 L300,91.4 L304,94.0 L308,91.4 L312,84.0 L316,73.0 L320,60.0" />
+                <path class="wave-432" d="M0,60.0 L4,48.4 L8,38.1 L12,30.6 L16,26.5 L20,26.5 L24,30.6 L28,38.1 L32,48.4 L36,60.0 L40,71.6 L44,81.9 L48,89.4 L52,93.5 L56,93.5 L60,89.4 L64,81.9 L68,71.6 L72,60.0 L76,48.4 L80,38.1 L84,30.6 L88,26.5 L92,26.5 L96,30.6 L100,38.1 L104,48.4 L108,60.0 L112,71.6 L116,81.9 L120,89.4 L124,93.5 L128,93.5 L132,89.4 L136,81.9 L140,71.6 L144,60.0 L148,48.4 L152,38.1 L156,30.6 L160,26.5 L164,26.5 L168,30.6 L172,38.1 L176,48.4 L180,60.0 L184,71.6 L188,81.9 L192,89.4 L196,93.5 L200,93.5 L204,89.4 L208,81.9 L212,71.6 L216,60.0 L220,48.4 L224,38.1 L228,30.6 L232,26.5 L236,26.5 L240,30.6 L244,38.1 L248,48.4 L252,60.0 L256,71.6 L260,81.9 L264,89.4 L268,93.5 L272,93.5 L276,89.4 L280,81.9 L284,71.6 L288,60.0 L292,48.4 L296,38.1 L300,30.6 L304,26.5 L308,26.5 L312,30.6 L316,38.1 L320,48.4" />
+              </svg>
+              <p><span class="key key-440">440 Hz</span> <span class="key key-432">432 Hz</span></p>
+              <p class="hint">Your retuned song will appear here.</p>
             </div>
-            <p class="hint">A 30-second clip. Switch while it plays.</p>
-          </div>
 
-          <div id="downloads" class="downloads hidden">
-            <a id="download-mp3" class="primary-btn" href="#">Download MP3</a>
-            <button id="download-wav" type="button" class="text-btn">Download WAV</button>
-          </div>
-          <p id="job-remaining" class="hint"></p>
-        </div>
-      </section>
+            <div id="job-panel" class="job hidden" aria-live="polite">
+              <p id="job-status" class="job-status"></p>
+              <progress id="job-progress" class="job-progress hidden" max="1" value="0"></progress>
+              <p id="job-meta" class="job-meta"></p>
+              <p id="job-error" class="error"></p>
 
-      <section id="history" class="history hidden" aria-labelledby="history-title">
-        <div class="history-head">
-          <h2 id="history-title">Recent</h2>
-          <button id="history-clear" type="button" class="link-btn">Clear</button>
+              <div id="ab-player" class="ab hidden">
+                <p class="field-label">Hear the difference</p>
+                <div class="ab-controls">
+                  <button id="ab-play" type="button" class="ab-play" aria-pressed="false">Listen</button>
+                  <div class="segmented" role="radiogroup" aria-label="Version playing">
+                    <button type="button" class="ab-option" data-ab="original" aria-pressed="false">Original · 440</button>
+                    <button type="button" class="ab-option" data-ab="tuned" aria-pressed="true">Retuned · <span id="ab-tuned-hz">432</span></button>
+                  </div>
+                </div>
+                <p class="hint">A 30-second clip. Switch while it plays.</p>
+              </div>
+
+              <div id="downloads" class="downloads hidden">
+                <a id="download-mp3" class="primary-btn" href="#">Download MP3</a>
+                <button id="download-wav" type="button" class="text-btn">Download WAV</button>
+              </div>
+              <p id="job-remaining" class="hint"></p>
+            </div>
+          </section>
+
+          <section id="history" class="history hidden" aria-labelledby="history-title">
+            <div class="history-head">
+              <h2 id="history-title">Recent</h2>
+              <button id="history-clear" type="button" class="link-btn">Clear</button>
+            </div>
+            <ul id="history-list" class="history-list"></ul>
+            <p class="hint">Stored only in this browser.</p>
+          </section>
         </div>
-        <ul id="history-list" class="history-list"></ul>
-        <p class="hint">Stored only in this browser.</p>
-      </section>
+      </div>
 
       <details class="about">
         <summary>What is 432 Hz?</summary>
@@ -117,7 +129,7 @@
       </details>
 
       <footer class="footnote">
-        Conversion happens in your browser: your files are never uploaded. YouTube links are fetched through an external service (Apify) and the audio is deleted there as soon as it reaches you. Cookie-free analytics.
+        Conversion happens in your browser. YouTube links are fetched through an external service (Apify) and the audio is deleted there as soon as it reaches you. Cookie-free analytics.
       </footer>
     </main>
 
